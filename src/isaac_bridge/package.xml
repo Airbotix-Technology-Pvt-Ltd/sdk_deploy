@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>isaac_bridge</name>
+  <version>1.1.0</version>
+  <description>
+    ROS2 ↔ drdds bridge between Isaac Sim and the Lite3_sdk_deploy controller.
+    Translates sensor_msgs (JointState, Imu) to native drdds hardware messages.
+  </description>
+  <maintainer email="lite3@airbotix.com">Airbotix</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>drdds</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

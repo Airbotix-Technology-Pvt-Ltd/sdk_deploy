@@ -12,8 +12,8 @@ void ControlParameters::GenerateLite3Parameters(){
     swing_leg_kp_ << 100., 100., 100.;
     swing_leg_kd_ << 2.5, 2.5, 2.5;
 
-    fl_joint_lower_ << -0.530, -3.50, 0.349;
-    fl_joint_upper_ << 0.530, 0.320, 2.80;
+    fl_joint_lower_ << -0.530, -4.00, -2.10;
+    fl_joint_upper_ << 0.530, 2.00, 4.00;
     joint_vel_limit_ << 30, 30, 20;
     torque_limit_ << 40, 40, 65;
 }
