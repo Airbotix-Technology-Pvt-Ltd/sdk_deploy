@@ -1,6 +1,6 @@
 /**
  * @file cmd_bridge_node.cpp
- * @brief Translates drdds/JOINTS_CMD → Isaac Sim topics at a fixed frequency.
+ * @brief Translates drdds/JOINTS_CMD → Isaac Sim topics (Pure Passthrough).
  */
 
 #include <rclcpp/rclcpp.hpp>
@@ -8,6 +8,7 @@
 #include "drdds/msg/joints_data_cmd.hpp"
 #include <mutex>
 #include <chrono>
+#include <vector>
 
 namespace isaac_bridge {
 
@@ -36,7 +37,7 @@ public:
         js_pub_ = create_publisher<sensor_msgs::msg::JointState>(
             "/joint_commands", rclcpp::SystemDefaultsQoS());
 
-        // ── Timer (Fixed Frequency) ──────────────────────────────────────
+        // ── Timer (Steady 200 Hz Passthrough) ────────────────────────────────
         auto period = std::chrono::milliseconds(1000 / rate_hz);
         timer_ = create_wall_timer(period, [this]() { PublishCmd(); });
     }
