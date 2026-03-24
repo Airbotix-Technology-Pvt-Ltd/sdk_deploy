@@ -29,7 +29,7 @@ class StateBridgeNode : public rclcpp::Node {
 public:
     StateBridgeNode() : Node("state_bridge_node") {
         // ── Parameters ────────────────────────────────────────────────────
-        this->declare_parameter("publish_rate_hz", 500);
+        this->declare_parameter("publish_rate_hz", 200);
         this->declare_parameter("joint_names", std::vector<std::string>{
             "FL_HipX_joint", "FL_HipY_joint", "FL_Knee_joint",
             "FR_HipX_joint", "FR_HipY_joint", "FR_Knee_joint",
