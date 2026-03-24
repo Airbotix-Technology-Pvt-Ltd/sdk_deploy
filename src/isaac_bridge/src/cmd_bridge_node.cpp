@@ -13,10 +13,10 @@ class CmdBridgeNode : public rclcpp::Node {
 public:
     CmdBridgeNode() : Node("cmd_bridge_node") {
         this->declare_parameter("joint_names", std::vector<std::string>{
-            "FL_HipX", "FL_HipY", "FL_Knee",
-            "FR_HipX", "FR_HipY", "FR_Knee",
-            "HL_HipX", "HL_HipY", "HL_Knee",
-            "HR_HipX", "HR_HipY", "HR_Knee"
+            "FL_HipX_joint", "FL_HipY_joint", "FL_Knee_joint",
+            "FR_HipX_joint", "FR_HipY_joint", "FR_Knee_joint",
+            "HL_HipX_joint", "HL_HipY_joint", "HL_Knee_joint",
+            "HR_HipX_joint", "HR_HipY_joint", "HR_Knee_joint"
         });
 
         joint_names_ = this->get_parameter("joint_names").as_string_array();
@@ -107,12 +107,7 @@ private:
         js.effort.resize(12);
 
         for (int i = 0; i < 12; ++i) {
-            double pos = msg->data.joints_data[i].position;
-            // Inverse mapping to Sim: HipY +0.8, Knee -1.076
-            if (i % 3 == 1) pos += 0.8;
-            if (i % 3 == 2) pos -= 1.076;
-            js.position[i] = pos;
-            
+            js.position[i] = msg->data.joints_data[i].position;
             js.velocity[i] = msg->data.joints_data[i].velocity;
             js.effort[i]   = msg->data.joints_data[i].torque;
         }

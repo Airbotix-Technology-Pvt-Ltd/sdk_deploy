@@ -5,8 +5,8 @@
  * This node makes Isaac Sim look like the real Lite3 hardware interface
  * by publishing /JOINTS_DATA and /IMU_DATA.
  *
- * CRITICAL: drdds/ImuData expects Roll/Pitch/Yaw in DEGREES.
- */
+ * CRITICAL: drdds/ImuData expects Roll/Pitch/Yaw
+**/
 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
@@ -31,10 +31,10 @@ public:
         // ── Parameters ────────────────────────────────────────────────────
         this->declare_parameter("publish_rate_hz", 500);
         this->declare_parameter("joint_names", std::vector<std::string>{
-            "FL_HipX", "FL_HipY", "FL_Knee",
-            "FR_HipX", "FR_HipY", "FR_Knee",
-            "HL_HipX", "HL_HipY", "HL_Knee",
-            "HR_HipX", "HR_HipY", "HR_Knee"
+            "FL_HipX_joint", "FL_HipY_joint", "FL_Knee_joint",
+            "FR_HipX_joint", "FR_HipY_joint", "FR_Knee_joint",
+            "HL_HipX_joint", "HL_HipY_joint", "HL_Knee_joint",
+            "HR_HipX_joint", "HR_HipY_joint", "HR_Knee_joint"
         });
 
         int rate_hz = this->get_parameter("publish_rate_hz").as_int();
@@ -83,7 +83,7 @@ private:
     std::array<float, 12> dq_  = {};
     std::array<float, 12> tau_ = {};
 
-    float rpy_[3]   = {}; // Rad in local, will convert to Deg for drdds
+    float rpy_[3]   = {}; // Rad
     float acc_[3]   = {};
     float omega_[3] = {};
 
@@ -92,14 +92,8 @@ private:
         for (size_t idx = 0; idx < msg->name.size(); ++idx) {
             for (int j = 0; j < 12; ++j) {
                 if (msg->name[idx] == joint_names_[j]) {
-                    float pos = static_cast<float>(msg->position[idx]);
-                    // RL MAPPING:
-                    // HipY: Sim 0.0 (Stand) -> SDK -0.8. Offset = -0.8
-                    // Knee: Sim 0.524 (Stand) -> SDK 1.6. Offset = +1.076
-                    if (j % 3 == 1) pos -= 0.8f;
-                    if (j % 3 == 2) pos += 1.076f;
 
-                    if (idx < msg->position.size()) q_[j]   = pos;
+                    if (idx < msg->position.size()) q_[j]   = static_cast<float>(msg->position[idx]);
                     if (idx < msg->velocity.size()) dq_[j]  = static_cast<float>(msg->velocity[idx]);
                     if (idx < msg->effort.size())   tau_[j] = static_cast<float>(msg->effort[idx]);
                     break;
@@ -144,12 +138,12 @@ private:
         }
         joints_pub_->publish(jd);
 
-        // /IMU_DATA (Convert Rad → Deg)
+        // /IMU_DATA 
         drdds::msg::ImuData imu;
         imu.header.stamp = now;
-        imu.data.roll    = rpy_[0] * 180.0 / M_PI;
-        imu.data.pitch   = rpy_[1] * 180.0 / M_PI;
-        imu.data.yaw     = rpy_[2] * 180.0 / M_PI;
+        imu.data.roll    = rpy_[0];
+        imu.data.pitch   = rpy_[1];
+        imu.data.yaw     = rpy_[2];
         imu.data.omega_x = omega_[0];
         imu.data.omega_y = omega_[1];
         imu.data.omega_z = omega_[2];
