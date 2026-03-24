@@ -56,11 +56,6 @@ public:
         // ── Timer ─────────────────────────────────────────────────────────
         auto period = std::chrono::milliseconds(1000 / rate_hz);
         timer_ = create_wall_timer(period, [this]() { PublishData(); });
-
-        // Jitter for SDK initialization (Required for stationary simulation)
-        std::random_device rd;
-        gen_ = std::mt19937(rd());
-        dist_ = std::uniform_real_distribution<float>(-1e-5, 1e-5);
     }
 
 private:
@@ -72,9 +67,6 @@ private:
 
     std::vector<std::string> joint_names_;
     std::mutex data_mutex_;
-
-    std::mt19937 gen_;
-    std::uniform_real_distribution<float> dist_;
 
     // Robot state buffers
     std::array<float, 12> q_   = {};
@@ -126,7 +118,7 @@ private:
         jd.header.stamp = now;
         for (int i = 0; i < 12; ++i) {
             jd.data.joints_data[i].status_word = 1;
-            jd.data.joints_data[i].position    = q_[i] + dist_(gen_); // Suble jitter for SDK init
+            jd.data.joints_data[i].position    = q_[i]; // Suble jitter for SDK init
             jd.data.joints_data[i].velocity    = dq_[i];
             jd.data.joints_data[i].torque      = tau_[i];
         }
