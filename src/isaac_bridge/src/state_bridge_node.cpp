@@ -6,7 +6,7 @@
  * by publishing /JOINTS_DATA and /IMU_DATA.
  *
  * CRITICAL: drdds/ImuData expects Roll/Pitch/Yaw
-**/
+ **/
 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
@@ -61,8 +61,6 @@ public:
         std::random_device rd;
         gen_ = std::mt19937(rd());
         dist_ = std::uniform_real_distribution<float>(-1e-5, 1e-5);
-
-        RCLCPP_INFO(get_logger(), "State bridge started @ %d Hz", rate_hz);
     }
 
 private:
@@ -92,7 +90,6 @@ private:
         for (size_t idx = 0; idx < msg->name.size(); ++idx) {
             for (int j = 0; j < 12; ++j) {
                 if (msg->name[idx] == joint_names_[j]) {
-
                     if (idx < msg->position.size()) q_[j]   = static_cast<float>(msg->position[idx]);
                     if (idx < msg->velocity.size()) dq_[j]  = static_cast<float>(msg->velocity[idx]);
                     if (idx < msg->effort.size())   tau_[j] = static_cast<float>(msg->effort[idx]);
@@ -118,9 +115,6 @@ private:
         omega_[0] = msg->angular_velocity.x;
         omega_[1] = msg->angular_velocity.y;
         omega_[2] = msg->angular_velocity.z;
-
-        RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 1000, "Receiving IMU Data | RPY (Deg): %.2f, %.2f, %.2f", 
-            rpy_[0]*180/M_PI, rpy_[1]*180/M_PI, rpy_[2]*180/M_PI);
     }
 
     void PublishData() {
