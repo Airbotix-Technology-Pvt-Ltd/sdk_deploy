@@ -46,11 +46,11 @@ public:
 
         // ── Subscribers (Isaac Sim) ────────────────────────────────────────
         js_sub_ = create_subscription<sensor_msgs::msg::JointState>(
-            "/joint_states", rclcpp::SystemDefaultsQoS(),
+            "/joint_states", rclcpp::SensorDataQoS(),
             [this](sensor_msgs::msg::JointState::ConstSharedPtr msg) { OnJointState(msg); });
 
         imu_sub_ = create_subscription<sensor_msgs::msg::Imu>(
-            "/imu/data", rclcpp::SystemDefaultsQoS(),
+            "/imu/data", rclcpp::SensorDataQoS(),
             [this](sensor_msgs::msg::Imu::ConstSharedPtr msg) { OnImu(msg); });
 
         // ── Timer ─────────────────────────────────────────────────────────
