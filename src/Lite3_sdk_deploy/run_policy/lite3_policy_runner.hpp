@@ -32,7 +32,7 @@ private:
     const int motor_num = 12;
     const int observation_dim = 45;
     const int action_dim = 12;
-    float agent_timestep = 0.005;
+    float agent_timestep = 0.02;
     float current_time;
     bool is_fallen = true;
 
@@ -99,7 +99,7 @@ public:
                                   0.0000, -0.8000, 1.6000,
                                   0.0000, -0.8000, 1.6000;
 
-        SetDecimation(1);
+        SetDecimation(4);
         session_options_.SetIntraOpNumThreads(4);
         session_options_.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
         
