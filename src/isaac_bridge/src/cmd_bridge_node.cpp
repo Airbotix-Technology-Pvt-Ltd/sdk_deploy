@@ -1,8 +1,8 @@
 /**
  * @file cmd_bridge_node.cpp
- * @brief Zero-Latency Sim-Time Synced PD Controller Bridge.
- * τ_passthrough = Kp*(q_des - q) + Kd*(dq_des - dq) + τ_ff
- */
+ * @brief Zero-Latency Sim-Time Synced Position/Velocity Bridge.
+ * Translates drdds/JOINTS_CMD → Isaac Sim sensor_msgs/JointState (Pos/Vel Targets).
+ **/
 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
@@ -26,7 +26,6 @@ public:
 
         joint_names_ = this->get_parameter("joint_names").as_string_array();
         q_.assign(12, 0.0f);
-        dq_.assign(12, 0.0f);
         q_init_.assign(12, 0.0f);
 
         // ── Subscribers ───────────────────────────────────────────────────
@@ -43,8 +42,8 @@ public:
             "/joint_commands", rclcpp::SensorDataQoS());
 
         // ── Startup Heartbeat (Freeze until RL starts) ────────────────────
-        startup_timer_ = create_wall_timer(std::chrono::milliseconds(10), [this]() {
-            if (!rl_active_ && q_captured_) PublishFreezeTorque();
+        startup_timer_ = create_wall_timer(std::chrono::milliseconds(20), [this]() {
+            if (!rl_active_ && q_captured_) PublishFreezePose();
         });
     }
 
@@ -55,7 +54,6 @@ private:
             for (int j = 0; j < 12; ++j) {
                 if (msg->name[idx] == joint_names_[j]) {
                     q_[j]  = static_cast<float>(msg->position[idx]);
-                    dq_[j] = static_cast<float>(msg->velocity[idx]);
                     break;
                 }
             }
@@ -72,18 +70,15 @@ private:
         }
     }
 
-    void PublishFreezeTorque() {
+    void PublishFreezePose() {
         sensor_msgs::msg::JointState js;
-        js.header.stamp = get_clock()->now(); // SYNC: Sim Time
+        js.header.stamp = get_clock()->now(); 
         js.name         = joint_names_;
-        js.position.resize(12);
-        js.effort.resize(12);
+        js.position.assign(12, 0.0);
 
         std::lock_guard<std::mutex> lock(state_mutex_);
         for (int i = 0; i < 12; ++i) {
             js.position[i] = q_init_[i];
-            // Strong Hold: Kp=100.0, Kd=5.0
-            js.effort[i] = 100.0f * (q_init_[i] - q_[i]) + 5.0f * (0.0f - dq_[i]);
         }
         js_pub_->publish(js);
     }
@@ -92,22 +87,20 @@ private:
         if (!rl_active_) {
             rl_active_ = true;
             startup_timer_->cancel();
-            RCLCPP_INFO(get_logger(), "RL Sync Master Active. Switch to dynamic PD.");
+            RCLCPP_INFO(get_logger(), "RL Sync Master Active. Forwarding Pos/Vel targets.");
         }
 
         sensor_msgs::msg::JointState js;
-        js.header.stamp = get_clock()->now(); // SYNC: Sim Time
+        js.header.stamp = get_clock()->now(); 
         js.name         = joint_names_;
         js.position.resize(12);
         js.velocity.resize(12);
-        js.effort.resize(12);
 
-        std::lock_guard<std::mutex> lock(state_mutex_);
         for (int i = 0; i < 12; ++i) {
             const auto& c = msg->data.joints_data[i];
             js.position[i] = c.position;
             js.velocity[i] = c.velocity;
-            js.effort[i]   = c.kp * (c.position - q_[i]) + c.kd * (c.velocity - dq_[i]) + c.torque;
+            // NOTE: js.effort is purposefully NOT published to avoid fighting simulator PD.
         }
         js_pub_->publish(js);
     }
@@ -119,7 +112,6 @@ private:
     
     std::vector<std::string> joint_names_;
     std::vector<float> q_;
-    std::vector<float> dq_;
     std::vector<float> q_init_;
     bool q_captured_ = false;
     bool rl_active_ = false;

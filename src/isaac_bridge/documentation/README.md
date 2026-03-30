@@ -20,46 +20,46 @@ To achieve this, the system requires a trained **RL Policy Runner** (contained w
 
 ---
 
-## 3. The `isaac_bridge` (Sim-to-SDK Connector)
+## 3. The `isaac_bridge` (High-Fidelity Sim-to-SDK Connector)
 
-The SDK utilizes the `drdds` protocol for high-performance communication. We developed the `isaac_bridge` to translate Isaac Sim's standard ROS2 topics into these `drdds` messages.
+The bridge handles data flow in two directions with specialized logic to match the RL policy requirements.
 
-### 3.1 Topic Mapping Specification
+### 3.1 Architecture: Zero-Latency & Sim-Time Synchronized
+Following the [NVIDIA Isaac Sim ROS 2 RL Controller Tutorial](https://docs.isaacsim.omniverse.nvidia.com/5.1.0/ros2_tutorials/tutorial_ros2_rl_controller.html), the bridge is configured as a **Pure Pos/Vel Passthrough**:
+- **Event-Driven Forwarding**: Sensor data is forwarded to the SDK immediately upon receipt from Isaac Sim.
+- **Simulation Time Sync**: Nodes strictly listen to the `/clock` topic (`use_sim_time: True`).
+- **High-Performance QoS**: Utilizes `rclcpp::SensorDataQoS()` (Best-Effort) for all Isaac-related topics.
 
-The bridge handles data flow in two directions:
+### 3.2 Topic Mapping Specification
 
 **Subscriber (Input to SDK):**
 | Topic Source (Isaac Sim) | Message Type | drdds Destination | Purpose |
 |--------------------------|--------------|-------------------|---------|
-| `/joint_states` | `sensor_msgs/JointState` | `/JOINTS_DATA` | Servo positions, velocities, and torques. |
+| `/joint_states` | `sensor_msgs/JointState` | `/JOINTS_DATA` | Servo positions and velocities. |
 | `/imu/data` | `sensor_msgs/Imu` | `/IMU_DATA` | Orientation (RPY), Angular Velocity, and Accel. |
 
 **Publisher (Output to Sim):**
 | Topic Source (SDK) | Message Type | Isaac Sim Topic | Purpose |
 |--------------------|--------------|-----------------|---------|
-| `/JOINTS_CMD` | `drdds/JointsDataCmd` | `/joint_commands` | Sending PD control (Kp/Kd) and torque to Sim. |
+| `/JOINTS_CMD` | `drdds/JointsDataCmd` | `/joint_commands` | Sending Position/Velocity targets to Isaac. |
 
-### 3.2 Calibration Logic (The Mapping)
-To match the RL model's training frame with the Isaac Sim URDF, we implemented standard offsets in the bridge:
-- **Knee (SDK)** = URDF Knee + 1.076 rad (Maps URDF 0.524 to RL 1.6).
-- **HipY (SDK)** = URDF HipY - 0.800 rad (Maps URDF 0.0 to RL -0.8).
+### 3.3 Control Mode: Position/Velocity
+The bridge forwards the RL policy's desired joint angles and velocities directly to Isaac Sim's `Articulation Controller`. Effort calculation is handled simulator-side to leverage high-frequency solver stability.
 
 ---
 
 ## 4. Completed Project Tasks
 
-### ✅ Isaac Sim Connectivity (isaac_bridge)
-Implemented both `state_bridge_node` and `cmd_bridge_node` for full sensor/command feedback.
-- Verified 500Hz loop rate for real-time control.
-- Added sensor jitter (±1e-5) to prevent SDK initialization hangs in simulation.
+### ✅ High-Fidelity Isaac Sim Connectivity
+Implemented `state_bridge_node` and `cmd_bridge_node` with Sim-Time awareness.
+- Handled IMU Orientation conversion (Quat to RPY).
+- Added safety checks for Zero-Quaternions.
 
 ### ✅ SDK Safety Harmonization
-Expanded joint limits in `lite3_control_parameters.cpp` to accommodate the wider range of the RL policy:
-- **HipY Lower Limit**: `-4.00` rad.
-- **Knee Upper Limit**: `+4.00` rad.
+Expanded joint limits in `lite3_control_parameters.cpp` to accommodate the policy range.
 
-### ✅ Initial Locomotion Verification
-Confirmed that the robot can successfully stand up and remain stable in the the simulation environment using its trained RL policy.
+### ✅ Locomotion Synchronization
+Aligned bridge QoS and timestamping with the simulator's native ROS 2 frequency.
 
 ---
 
@@ -71,3 +71,4 @@ Confirmed that the robot can successfully stand up and remain stable in the the 
 
 ---
 *DeepRobotics Lite3 - P2P Navigation Project Documentation*
+*Reference: [NVIDIA Tutorial - ROS 2 RL Controller](https://docs.isaacsim.omniverse.nvidia.com/5.1.0/ros2_tutorials/tutorial_ros2_rl_controller.html)*
