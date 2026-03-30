@@ -40,7 +40,7 @@ public:
 
         // ── Publisher ─────────────────────────────────────────────────────
         js_pub_ = create_publisher<sensor_msgs::msg::JointState>(
-            "/joint_commands", rclcpp::SystemDefaultsQoS());
+            "/joint_commands", rclcpp::SensorDataQoS());
 
         // ── Startup Heartbeat (Freeze until RL starts) ────────────────────
         startup_timer_ = create_wall_timer(std::chrono::milliseconds(10), [this]() {
