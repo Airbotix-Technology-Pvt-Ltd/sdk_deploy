@@ -61,14 +61,21 @@ Expanded joint limits in `lite3_control_parameters.cpp` to accommodate the polic
 ### ✅ Locomotion Synchronization
 Aligned bridge QoS and timestamping with the simulator's native ROS 2 frequency.
 
+### ✅ LiDAR Integration
+Integrated the Isaac Sim LiDAR sensor following the [NVIDIA Tutorial](https://www.youtube.com/watch?v=mMaWWAIDXH8).
+- Verified `sensor_msgs/PointCloud2` output from Isaac Sim.
+- Confirmed stable visualization in `rviz2`.
+
 ---
 
 ## 5. Pending Project Tasks (Next Steps)
 
-1. **Nav2 Configuration**: Finalizing the costmap and planner sensors in Isaac Sim.
+1. **Nav2 Configuration**: Initializing path planning using the active PointCloud2 data.
 2. **P2P Goal Interface**: Connecting Nav2's `/cmd_vel` output to the RL policy's velocity interface.
 3. **Hardware Deployment**: Final testing on the physical Lite3 via the `lite3_transfer` node.
 
 ---
 *DeepRobotics Lite3 - P2P Navigation Project Documentation*
-*Reference: [NVIDIA Tutorial - ROS 2 RL Controller](https://docs.isaacsim.omniverse.nvidia.com/5.1.0/ros2_tutorials/tutorial_ros2_rl_controller.html)*
+*References:*
+- [NVIDIA Tutorial - ROS 2 RL Controller](https://docs.isaacsim.omniverse.nvidia.com/5.1.0/ros2_tutorials/tutorial_ros2_rl_controller.html)
+- [NVIDIA Tutorial - LiDAR Integration](https://www.youtube.com/watch?v=mMaWWAIDXH8)
