@@ -16,13 +16,13 @@ def generate_launch_description():
             executable='state_bridge_node',
             name='state_bridge_node',
             output='screen',
-            parameters=[config]
+            parameters=[config, {'use_sim_time': True}]
         ),
         Node(
             package='isaac_bridge',
             executable='cmd_bridge_node',
             name='cmd_bridge_node',
             output='screen',
-            parameters=[config]
+            parameters=[config, {'use_sim_time': True}]
         )
     ])

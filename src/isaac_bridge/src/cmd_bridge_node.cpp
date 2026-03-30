@@ -1,21 +1,22 @@
 /**
  * @file cmd_bridge_node.cpp
- * @brief Translates drdds/JOINTS_CMD → Isaac Sim topics (Pure Passthrough).
+ * @brief Zero-Latency Sim-Time Synced PD Controller Bridge.
+ * τ_passthrough = Kp*(q_des - q) + Kd*(dq_des - dq) + τ_ff
  */
 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include "drdds/msg/joints_data_cmd.hpp"
+#include <vector>
+#include <string>
 #include <mutex>
 #include <chrono>
-#include <vector>
 
 namespace isaac_bridge {
 
 class CmdBridgeNode : public rclcpp::Node {
 public:
     CmdBridgeNode() : Node("cmd_bridge_node") {
-        this->declare_parameter("publish_rate_hz", 200);
         this->declare_parameter("joint_names", std::vector<std::string>{
             "FL_HipX_joint", "FL_HipY_joint", "FL_Knee_joint",
             "FR_HipX_joint", "FR_HipY_joint", "FR_Knee_joint",
@@ -23,59 +24,107 @@ public:
             "HR_HipX_joint", "HR_HipY_joint", "HR_Knee_joint"
         });
 
-        int rate_hz = this->get_parameter("publish_rate_hz").as_int();
         joint_names_ = this->get_parameter("joint_names").as_string_array();
+        q_.assign(12, 0.0f);
+        dq_.assign(12, 0.0f);
+        q_init_.assign(12, 0.0f);
 
-        // ── Subscriber (Lite3_sdk_deploy) ──────────────────────────────────
+        // ── Subscribers ───────────────────────────────────────────────────
+        js_sub_ = create_subscription<sensor_msgs::msg::JointState>(
+            "/joint_states", rclcpp::SensorDataQoS(),
+            [this](sensor_msgs::msg::JointState::ConstSharedPtr msg) { OnJointState(msg); });
+
         cmd_sub_ = create_subscription<drdds::msg::JointsDataCmd>(
             "/JOINTS_CMD", 10,
-            [this](drdds::msg::JointsDataCmd::ConstSharedPtr msg) { 
-                OnJointCmd(msg); 
-            });
+            [this](drdds::msg::JointsDataCmd::ConstSharedPtr msg) { OnJointCmd(msg); });
 
-        // ── Publisher (Isaac Sim) ──────────────────────────────────────────
+        // ── Publisher ─────────────────────────────────────────────────────
         js_pub_ = create_publisher<sensor_msgs::msg::JointState>(
             "/joint_commands", rclcpp::SystemDefaultsQoS());
 
-        // ── Timer (Steady 200 Hz Passthrough) ────────────────────────────────
-        auto period = std::chrono::milliseconds(1000 / rate_hz);
-        timer_ = create_wall_timer(period, [this]() { PublishCmd(); });
+        // ── Startup Heartbeat (Freeze until RL starts) ────────────────────
+        startup_timer_ = create_wall_timer(std::chrono::milliseconds(10), [this]() {
+            if (!rl_active_ && q_captured_) PublishFreezeTorque();
+        });
     }
 
 private:
-    rclcpp::Subscription<drdds::msg::JointsDataCmd>::SharedPtr cmd_sub_;
-    rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr js_pub_;
-    rclcpp::TimerBase::SharedPtr timer_;
-    
-    std::mutex cmd_mutex_;
-    std::vector<std::string> joint_names_;
-    drdds::msg::JointsDataCmd last_cmd_;
-    bool has_cmd_ = false;
+    void OnJointState(const sensor_msgs::msg::JointState::ConstSharedPtr& msg) {
+        std::lock_guard<std::mutex> lock(state_mutex_);
+        for (size_t idx = 0; idx < msg->name.size(); ++idx) {
+            for (int j = 0; j < 12; ++j) {
+                if (msg->name[idx] == joint_names_[j]) {
+                    q_[j]  = static_cast<float>(msg->position[idx]);
+                    dq_[j] = static_cast<float>(msg->velocity[idx]);
+                    break;
+                }
+            }
+        }
 
-    void OnJointCmd(const drdds::msg::JointsDataCmd::ConstSharedPtr& msg) {
-        std::lock_guard<std::mutex> lock(cmd_mutex_);
-        last_cmd_ = *msg;
-        has_cmd_ = true;
+        if (!q_captured_) {
+            if (settlement_frames_ < 100) {
+                settlement_frames_++;
+            } else {
+                q_init_ = q_;
+                q_captured_ = true;
+                RCLCPP_INFO(get_logger(), "Settlement done. Sim-Time synced freeze active.");
+            }
+        }
     }
 
-    void PublishCmd() {
-        if (!has_cmd_) return;
-
-        std::lock_guard<std::mutex> lock(cmd_mutex_);
+    void PublishFreezeTorque() {
         sensor_msgs::msg::JointState js;
-        js.header.stamp = get_clock()->now();
+        js.header.stamp = get_clock()->now(); // SYNC: Sim Time
+        js.name         = joint_names_;
+        js.position.resize(12);
+        js.effort.resize(12);
+
+        std::lock_guard<std::mutex> lock(state_mutex_);
+        for (int i = 0; i < 12; ++i) {
+            js.position[i] = q_init_[i];
+            // Strong Hold: Kp=100.0, Kd=5.0
+            js.effort[i] = 100.0f * (q_init_[i] - q_[i]) + 5.0f * (0.0f - dq_[i]);
+        }
+        js_pub_->publish(js);
+    }
+
+    void OnJointCmd(const drdds::msg::JointsDataCmd::ConstSharedPtr& msg) {
+        if (!rl_active_) {
+            rl_active_ = true;
+            startup_timer_->cancel();
+            RCLCPP_INFO(get_logger(), "RL Sync Master Active. Switch to dynamic PD.");
+        }
+
+        sensor_msgs::msg::JointState js;
+        js.header.stamp = get_clock()->now(); // SYNC: Sim Time
         js.name         = joint_names_;
         js.position.resize(12);
         js.velocity.resize(12);
         js.effort.resize(12);
 
+        std::lock_guard<std::mutex> lock(state_mutex_);
         for (int i = 0; i < 12; ++i) {
-            js.position[i] = last_cmd_.data.joints_data[i].position;
-            js.velocity[i] = last_cmd_.data.joints_data[i].velocity;
-            js.effort[i]   = last_cmd_.data.joints_data[i].torque;
+            const auto& c = msg->data.joints_data[i];
+            js.position[i] = c.position;
+            js.velocity[i] = c.velocity;
+            js.effort[i]   = c.kp * (c.position - q_[i]) + c.kd * (c.velocity - dq_[i]) + c.torque;
         }
         js_pub_->publish(js);
     }
+
+    rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr js_sub_;
+    rclcpp::Subscription<drdds::msg::JointsDataCmd>::SharedPtr    cmd_sub_;
+    rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr       js_pub_;
+    rclcpp::TimerBase::SharedPtr startup_timer_;
+    
+    std::vector<std::string> joint_names_;
+    std::vector<float> q_;
+    std::vector<float> dq_;
+    std::vector<float> q_init_;
+    bool q_captured_ = false;
+    bool rl_active_ = false;
+    int settlement_frames_ = 0;
+    std::mutex state_mutex_;
 };
 
 } // namespace isaac_bridge
