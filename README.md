@@ -1,60 +1,41 @@
-# Lite3 RL & Navigation Development (Airbotix Fork)
+# Lite3 Bridge & SDK Deployment (Airbotix Fork)
 
-This repository is a specialized fork of the DeepRobotics Lite3/M20 SDK, significantly enhanced and rebuilt for **High-Fidelity Simulation-to-Reality RL Deployment** and **Autonomous Robotic Navigation**.
-
----
-
-## 📊 Project Roadmap & Milestones
-
-### **Phase 1: Foundation (COMPLETED)**
-- [x] **Locomotion Sync**: Zero-latency C++ bridge with simulation-time awareness.
-- [x] **Simulation Logic Setup**: Following NVIDIA's ROS 2 RL Controller standards.
-- [x] **Perception Suite (LiDAR/Depth)**: Integrated 360 Lidar and Depth camera for PointCloud2 streams.
-- [x] **Spatial Frames (TF Tree)**: Established the full `odom -> base_link -> sensors` transform hierarchy.
-
-### **Phase 2: Intelligent Navigation (ONGOING - ACTIVE TARGET)**
-- [ ] **Fast-LIO SLAM**: Integrating high-performance 3D LiDAR Odometry and Mapping.
-- [ ] **Nav2 Path Planning**: Configuring the costmap and global planner using the SLAM map.
-- [ ] **P2P Goal Interface**: Connecting Nav2 goals directly to the RL policy's velocity interface.
-
-### **Phase 3: Real-World Deployment (PENDING)**
-- [ ] **Hardware Transfer**: Transitioning from Isaac Sim to physical Lite3 hardware via the transfer layer.
-- [ ] **Autonomous Navigation Tests**: Validating P2P success in complex indoor environments.
+This workspace contains the core ROS 2 and C++ infrastructure for **High-Fidelity Simulation-to-Reality Deployment** of RL policies on the Lite3 quadruped platform.
 
 ---
 
-## 🚀 Key Enhancements in this Fork
-
-Unlike the standard SDK, this fork has been engineered to bridge the gap between RL training and high-fidelity simulation in NVIDIA Isaac Sim:
-
-- **Zero-Latency Sim-Sync Bridge**: Transformed the core `isaac_bridge` into a zero-latency hub synchronized to the simulation `/clock`.
-- **Locomotion Stability & PD Alignment**: Re-engineered the bridge to compute local PD efforts, matching MuJoCo training physics and achieving jitter-free movement.
-- **Multi-Modal Perception Suite**: Successfully integrated LiDAR (PointCloud2) and Depth Camera sensors.
-- **Simulator Startup Safety**: Implemented a custom "Settlement Filter" and high-gain "Freeze Pose" mechanism.
+> [!IMPORTANT]
+> **Airbotix is exclusively focused on the Lite3 platform.** 
+> While foundational code for other platforms (M20) is preserved as legacy reference, our research is dedicated to achieving state-of-the-art results on the Jueying Lite3.
 
 ---
 
-## 📖 Project Documentation & Reference Hub
-
-Everything you need to replicate this technical journey is consolidated here:
-
-- [**documentation/README.md**](documentation/README.md): **Master Integration Guide**. Detailed milestones, calibration logic, and reproduction steps.
-- [**documentation/README_lite3_sdk_service.md**](documentation/README_lite3_sdk_service.md): **Original SDK Service Guide**. Foundational technical documentation from DeepRobotics.
-- [**documentation/isaac_action_graph/**](documentation/isaac_action_graph/): **Visual Gallery**. Screenshots of all internal simulation node wiring.
+**Official Airbotix Source**: [Airbotix-Technology-Pvt-Ltd/Lite3_sdk_deploy](https://github.com/Airbotix-Technology-Pvt-Ltd/Lite3_sdk_deploy)
 
 ---
 
-## 🛠️ Project Identity & Ownership
+### 🌐 Project Central Hubs
+- [**Master Hub (Root)**](https://github.com/Airbotix-Technology-Pvt-Ltd/Lite3Robot): Mission, specialized workspaces, and organizational identity.
+- [**Master Integration Guide**](../documentation/README.md): **Single Source of Truth** for technical milestones, roadmaps, and reproduction steps.
+- [**Contributors Hub**](../Contributors.md): Full technical attribution for the Airbotix development team.
 
-- **Organization**: Airbotix Technology Pvt Ltd.
-- **Lead Developer**: **Sumit Bhardwaj** ([@smtbhd32-ABX](https://github.com/smtbhd32-ABX)).
-- **Project Mission**: Enabling stable, autonomous quadruped locomotion for P2P Navigation.
+---
+
+## 🛠️ Workspace Components
+
+### **1. `isaac_bridge` (NVIDIA Isaac Sim Integration)**
+The heart of our simulation infrastructure. Re-engineered as a zero-latency hub synchronized to the simulation `/clock`, ensuring stable locomotion and PD alignment between training and deployment.
+
+### **2. `lite_transfer` (Hardware Bridging)**
+The C++ communication layer between simulation-trained policies and physical hardware, using the deep-rooted M20/Lite3 UDP protocols.
+
+### **3. `Perception Suite` (LiDAR/Depth)**
+Integrated 360 Lidar and Depth camera stack for PointCloud2 streams and spatial TF frames (`odom -> base_link -> sensors`).
 
 ---
 
-## ❤️ Credits & Tribute
-
-We would like to express our sincere gratitude and pay tribute to **DeepRobotics** for providing the foundational Lite3 SDK and robust hardware interfaces. Their original work is the bedrock upon which our simulation-to-reality pipeline was built. 
+## 📖 Quick Reference
+For detailed replication steps, simulation ActionGraphs, and hardware manuals, please refer to the centralized [**Technical Library**](../documentation/README.md).
 
 ---
-*Developed by Airbotix Technology Pvt Ltd for Lite3 Locomotion Research.*
+*Airbotix Technology Pvt Ltd - Lite3 P2P Autonomous Navigation Project*

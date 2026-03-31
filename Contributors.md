@@ -1,26 +1,32 @@
-# Contributors (Airbotix Fork)
+# Contributors (Airbotix SDK Deploy Stack)
 
-The following individuals and organizations have contributed to the **Lite3 RL & Navigation Development (Airbotix Fork)**:
+The following individuals and organizations have contributed to this specialized **Lite3 Bridge & SDK Deployment Hub (Airbotix Fork)**:
 
 ---
 
-### 🛡️ Lead Developer & Organization
+### 🛡️ Core Technical Contributions
 
-- **Sumit Bhardwaj** ([@smtbhd32-ABX](https://github.com/smtbhd32-ABX))
+- **Sumit Bhardwaj** ([@smtbhd32-ABX](https://github.com/smtbhd32-ABX))  
+  *Chief architect for high-fidelity locomotion, Isaac Sim bridge development, and autonomous navigation (Fast-LIO/Nav2).*
+
+- **Meenu** ([@Meenu-airbotix](https://github.com/Meenu-airbotix))  
+  *Initial technical audit, setup guidelines, and master technical library architect.*
+
 - **Airbotix Technology Pvt Ltd** (http://airbotix.in)
 
-**Focus Areas:**
-- **Isaac Sim ROS2 Bridge**: Zero-latency, sim-time synchronized C++ bridge architecture.
-- **RL Locomotion Stability**: Multi-modal sensor sync (LiDAR, Depth, IMU) for quadruped control.
-- **Autonomous Navigation**: Spatial frame integration and Nav2-RL goal interface.
-
 ---
 
-### ❤️ Foundation & Tribute
+### ❤️ Foundation & Tribute (DeepRobotics)
 
-We would like to pay a special tribute and express our gratitude to **DeepRobotics** for their foundational work. Their original Lite3/M20 SDK and hardware interfaces are the core upon which this research and development is built.
+We pay a special tribute and express our deep gratitude to **DeepRobotics** and the original developers of the foundational Lite3/M20 hardware and SDK interfaces:
 
-*Thank you for the original SDK architecture.*
+- **Original Lead Developer**: [Bo Peng](https://www.linkedin.com/in/bo-peng-647068272/)
+- **Original Contributors**: [Ziqi Fan](https://github.com/fan-ziqi), Zhongliang Pan.
+
+**Foundation Repositories:**
+- **SDK Deploy**: [DeepRoboticsLab/sdk_deploy](https://github.com/DeepRoboticsLab/sdk_deploy)
+- **RL Training**: [DeepRoboticsLab/rl_training](https://github.com/DeepRoboticsLab/rl_training)
+- **Motion SDK**: [DeepRoboticsLab/Lite3_MotionSDK](https://github.com/DeepRoboticsLab/Lite3_MotionSDK)
 
 ---
-*DeepRobotics Lite3 - P2P Autonomous Navigation Project*
+*Airbotix Technology Pvt Ltd - Lite3 P2P Autonomous Navigation Project*
