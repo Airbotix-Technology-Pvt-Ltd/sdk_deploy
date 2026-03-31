@@ -6,7 +6,7 @@ The following individuals and organizations have contributed to the **Lite3 RL &
 
 ### 🛡️ Lead Developer & Organization
 
-- **Sumit Bhardwaj** (@smtbhd32-ABX)
+- **Sumit Bhardwaj** ([@smtbhd32-ABX](https://github.com/smtbhd32-ABX))
 - **Airbotix Technology Pvt Ltd** (http://airbotix.in)
 
 **Focus Areas:**

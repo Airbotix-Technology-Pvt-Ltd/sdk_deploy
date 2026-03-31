@@ -47,7 +47,7 @@ Everything you need to replicate this technical journey is consolidated here:
 ## 🛠️ Project Identity & Ownership
 
 - **Organization**: Airbotix Technology Pvt Ltd.
-- **Lead Developer**: **Sumit Bhardwaj** (@smtbhd32-ABX).
+- **Lead Developer**: **Sumit Bhardwaj** ([@smtbhd32-ABX](https://github.com/smtbhd32-ABX)).
 - **Project Mission**: Enabling stable, autonomous quadruped locomotion for P2P Navigation.
 
 ---

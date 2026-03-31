@@ -75,4 +75,4 @@ We pay tribute and express our sincere gratitude to **DeepRobotics** for providi
 
 ---
 *Developed by Airbotix Technology Pvt Ltd for Lite3 Locomotion Research.*
-*Sumit Bhardwaj (@smtbhd32-ABX)*
+*Sumit Bhardwaj ([@smtbhd32-ABX](https://github.com/smtbhd32-ABX))*
