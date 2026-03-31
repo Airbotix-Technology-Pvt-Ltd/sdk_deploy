@@ -57,8 +57,8 @@ Established the full `odom -> base_link -> sensors` transform chain following th
 
 ## 5. Reproduction & Demos
 
-To reproduce the work above, use the latest simulation assets (relative to workspace root):
-- **Master Simulation File**: [isaacsim/environment/demo3.usd](../../isaacsim/environment/demo3.usd)
+To reproduce the work above, use the latest simulation assets (internal to package):
+- **Master Simulation File**: [isaacsim/environment/demo3.usd](../isaacsim/environment/demo3.usd)
 - **ActionGraphs Gallery**: [isaac_action_graphs/](isaac_action_graphs/) (Screenshots of all internal simulation wiring).
 
 ---

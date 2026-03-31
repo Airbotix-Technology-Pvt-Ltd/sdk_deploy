@@ -33,7 +33,7 @@ Established the full `odom -> base_link -> sensors` transform chain for Nav2 com
 ## 🚀 Quick Replication & Deployment
 
 To reproduce the latest architecture:
-1. **Source Simulation**: Load [**`demo3.usd`**](../../isaacsim/environment/demo3.usd).
+1. **Source Simulation**: Load [**`demo3.usd`**](isaacsim/environment/demo3.usd) (contained in the internal `isaacsim/environment/` folder of this package).
 2. **Review Graphs**: Verify simulation wiring using the [ActionGraphs Gallery](documentation/isaac_action_graphs/).
 3. **Launch Bridge**:
    ```bash
