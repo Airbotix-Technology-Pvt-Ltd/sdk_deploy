@@ -27,48 +27,43 @@ The bridge handles data flow in two directions with specialized logic to match t
 ### 3.1 Architecture: Zero-Latency & Sim-Time Synchronized
 Following the [NVIDIA Isaac Sim ROS 2 RL Controller Tutorial](https://docs.isaacsim.omniverse.nvidia.com/5.1.0/ros2_tutorials/tutorial_ros2_rl_controller.html), the bridge is configured as a **Pure Pos/Vel Passthrough**:
 - **Event-Driven Forwarding**: Sensor data is forwarded to the SDK immediately upon receipt from Isaac Sim.
-- **Simulation Time Sync**: Nodes strictly listen to the `/clock` topic (`use_sim_time: True`).
+- **Simulation Time Sync**: Nodes strictly listen to the `/clock` topic (`use_sim_time: True`), ensuring all messages are timestamped consistently with the physics engine.
 - **High-Performance QoS**: Utilizes `rclcpp::SensorDataQoS()` (Best-Effort) for all Isaac-related topics.
 
-### 3.2 Topic Mapping Specification
-
-**Subscriber (Input to SDK):**
-| Topic Source (Isaac Sim) | Message Type | drdds Destination | Purpose |
-|--------------------------|--------------|-------------------|---------|
-| `/joint_states` | `sensor_msgs/JointState` | `/JOINTS_DATA` | Servo positions and velocities. |
-| `/imu/data` | `sensor_msgs/Imu` | `/IMU_DATA` | Orientation (RPY), Angular Velocity, and Accel. |
-
-**Publisher (Output to Sim):**
-| Topic Source (SDK) | Message Type | Isaac Sim Topic | Purpose |
-|--------------------|--------------|-----------------|---------|
-| `/JOINTS_CMD` | `drdds/JointsDataCmd` | `/joint_commands` | Sending Position/Velocity targets to Isaac. |
-
-### 3.3 Control Mode: Position/Velocity
-The bridge forwards the RL policy's desired joint angles and velocities directly to Isaac Sim's `Articulation Controller`. Effort calculation is handled simulator-side to leverage high-frequency solver stability.
-
 ---
 
-## 4. Completed Project Tasks
+## 4. Completed Project Milestone Steps
 
-### ✅ High-Fidelity Isaac Sim Connectivity
+### **Step 1: High-Fidelity Isaac Sim Connectivity (Locomotion Sync)**
 Implemented `state_bridge_node` and `cmd_bridge_node` with Sim-Time awareness.
 - Handled IMU Orientation conversion (Quat to RPY).
-- Added safety checks for Zero-Quaternions.
+- Added safety checks for Zero-Quaternions to prevent RL policy crashes.
 
-### ✅ SDK Safety Harmonization
-Expanded joint limits in `lite3_control_parameters.cpp` to accommodate the policy range.
+### **Step 2: Simulation Logic Setup (RL Controller Sync)**
+Configured simulation environment and bridge logic following the [NVIDIA Tutorial](https://docs.isaacsim.omniverse.nvidia.com/5.1.0/ros2_tutorials/tutorial_ros2_rl_controller.html).
+- Established the **On-Demand** simulation pipeline for synchronization.
 
-### ✅ Locomotion Synchronization
-Aligned bridge QoS and timestamping with the simulator's native ROS 2 frequency.
-
-### ✅ LiDAR & Depth Perception
-Integrated both LiDAR and Depth Camera sensors following NVIDIA tutorials.
+### **Step 3: Multi-Modal Perception Integration (LiDAR & Depth)**
+Integrated both LiDAR and Depth Camera sensors following the [NVIDIA Tutorial](https://www.youtube.com/watch?v=mMaWWAIDXH8) and [Depth Camera Tutorial](https://www.youtube.com/watch?v=yuV8AYAeW_c).
 - Confirmed `sensor_msgs/PointCloud2` and `sensor_msgs/Image` (Depth) output.
-- Verified stable visualization of multi-modal perception data in `rviz2`.
+- Verified stable visualization of perception data in `rviz2`.
+
+### **Step 4: Spatial Frame Integration (TF Tree)**
+Established the full `odom -> base_link -> sensors` transform chain following the [NVIDIA Tutorial](https://docs.isaacsim.omniverse.nvidia.com/5.1.0/ros2_tutorials/tutorial_ros2_tf.html).
+- Verified full tree representation in `rviz2`.
+- Confirmed correct alignment of sensor frames relative to the robot's base link.
 
 ---
 
-## 5. Pending Project Tasks (Next Steps)
+## 5. Reproduction & Demos
+
+To reproduce the work above, use the latest simulation assets (relative to workspace root):
+- **Master Simulation File**: [isaacsim/environment/demo3.usd](../../isaacsim/environment/demo3.usd)
+- **ActionGraphs Gallery**: [isaac_action_graphs/](isaac_action_graphs/) (Screenshots of all internal simulation wiring).
+
+---
+
+## 6. Pending Project Milestone Steps
 
 1. **Nav2 Configuration**: Finalizing the costmap using combined LiDAR and Depth data.
 2. **P2P Goal Interface**: Connecting Nav2's `/cmd_vel` output to the RL policy's velocity interface.
@@ -80,3 +75,4 @@ Integrated both LiDAR and Depth Camera sensors following NVIDIA tutorials.
 - [NVIDIA Tutorial - ROS 2 RL Controller](https://docs.isaacsim.omniverse.nvidia.com/5.1.0/ros2_tutorials/tutorial_ros2_rl_controller.html)
 - [NVIDIA Tutorial - LiDAR Integration](https://www.youtube.com/watch?v=mMaWWAIDXH8)
 - [NVIDIA Tutorial - Depth Camera](https://www.youtube.com/watch?v=yuV8AYAeW_c)
+- [NVIDIA Tutorial - TF Integration](https://docs.isaacsim.omniverse.nvidia.com/5.1.0/ros2_tutorials/tutorial_ros2_tf.html)
