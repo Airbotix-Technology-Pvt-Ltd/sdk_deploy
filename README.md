@@ -21,6 +21,17 @@ This workspace contains the core ROS 2 and C++ infrastructure for **High-Fidelit
 
 ---
 
+## 📋 Prerequisites & Tooling
+To reproduce our high-fidelity SLAM results, ensure the following specialized Technical dependencies are installed:
+- **`pcl-tools`**: Professional PCL utilities for map inspection and format conversion.
+  ```bash
+  sudo apt update && sudo apt install -y pcl-tools
+  ```
+- **`FAST_LIO_ROS2`**: Optimized, hardware-agnostic SLAM stack for ROS 2 Humble.
+- **Python Utilities**: Standard **`numpy`** and **`opencv-python`** for 2D map projection.
+
+---
+
 ## 🛠️ Workspace Components
 
 ### **1. `isaac_bridge` (NVIDIA Isaac Sim Integration)**
@@ -31,6 +42,12 @@ The C++ communication layer between simulation-trained policies and physical har
 
 ### **3. `Perception Suite` (LiDAR/Depth)**
 Integrated 360 Lidar and Depth camera stack for PointCloud2 streams and spatial TF frames (`odom -> base_link -> sensors`).
+
+### **4. `Fast-LIO SLAM` (3D LiDAR Navigation)**
+Integrated a high-performance, optimized version of **FAST_LIO_ROS2** for the Lite3. Stripped of hardware-specific dependencies (`livox_ros_driver2`) to ensure universal simulation and physical LiDAR compatibility.
+
+### **5. `Mapping & Navigation Artifacts`**
+Generated a high-fidelity **2D Occupancy Grid Map** (`map.pgm`/`map.yaml`) for Nav2 integration, derived from our globally registered 3D pointcloud maps using the specialized **`pcd_to_grid.py`** projection utility.
 
 ---
 
