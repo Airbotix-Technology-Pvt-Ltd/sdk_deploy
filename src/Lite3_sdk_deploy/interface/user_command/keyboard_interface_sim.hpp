@@ -8,6 +8,8 @@
 #include "user_command_interface.h"
 #include "custom_types.h"
 #include <libevdev-1.0/libevdev/libevdev.h>
+#include <geometry_msgs/msg/twist.hpp>
+#include <rclcpp/rclcpp.hpp>
 #include <fcntl.h>
 #include <unistd.h>
 #include <dirent.h>
@@ -28,6 +30,8 @@ class KeyboardInterface : public UserCommandInterface
 private:
     std::atomic<bool> running_{false};
     std::thread kb_thread_;
+    bool use_ros2_ = false;
+    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
 
     float max_forward_ = 0.7f;
     float max_side_    = 0.5f;
@@ -61,6 +65,7 @@ private:
     // Called on press (value=1) and repeat (value=2)
     void apply_key_direction(int keycode)
     {
+        if (use_ros2_) return; // WASD ignored in autonomous mode
         const float step = 0.1f;
 
         if (keycode == KEY_W)       fwd  +=  step * max_forward_;
@@ -105,6 +110,12 @@ private:
         else if (keycode == KEY_C && msfb_->GetCurrentState() == RobotMotionState::StandingUp) {
             usr_cmd_->target_mode = uint8_t(RobotMotionState::RLControlMode);
             std::cout << "[MODE] RL Control\n";
+        }
+        else if (keycode == KEY_P) {
+            use_ros2_ = !use_ros2_;
+            fwd = side = yaw = 0.0f;
+            if (use_ros2_) std::cout << "[HYBRID] Autonomous (Nav2 active, WASD ignored)\n";
+            else           std::cout << "[HYBRID] Manual (WASD active)\n";
         }
     }
 
@@ -210,7 +221,7 @@ private:
 
                     // Mode keys (only on real press)
                     if (ev.value == 1) {
-                        if (ev.code == KEY_R || ev.code == KEY_Z || ev.code == KEY_C) {
+                        if (ev.code == KEY_R || ev.code == KEY_Z || ev.code == KEY_C || ev.code == KEY_P) {
                             process_mode_key(ev.code);
                         }
                         if (ev.code == KEY_ESC) {
@@ -245,6 +256,21 @@ public:
     {
         std::cout << "[KeyboardInterface] Ramp-up + instant-stop version ready!\n";
         std::memset(usr_cmd_, 0, sizeof(UserCommand));
+    }
+
+    void InitROS2(rclcpp::Node::SharedPtr node) {
+        if (!node) return;
+        cmd_vel_sub_ = node->create_subscription<geometry_msgs::msg::Twist>(
+            "/cmd_vel", 10,
+            [this](const geometry_msgs::msg::Twist::SharedPtr msg) {
+                if (use_ros2_) {
+                    fwd  = static_cast<float>(msg->linear.x);
+                    side = static_cast<float>(msg->linear.y);
+                    yaw  = static_cast<float>(msg->angular.z);
+                }
+            }
+        );
+        std::cout << "[KeyboardInterface] Nav2 /cmd_vel subscribed. Press P to toggle.\n";
     }
 
     ~KeyboardInterface() { Stop(); }

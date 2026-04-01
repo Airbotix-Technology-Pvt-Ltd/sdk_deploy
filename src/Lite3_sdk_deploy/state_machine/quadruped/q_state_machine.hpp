@@ -49,7 +49,9 @@ public:
 
         // 创建用户命令接口
         if(remote_cmd_type_ == RemoteCommandType::kKeyBoard){
-            uc_ptr_ = std::make_shared<KeyboardInterface>(robot_name_);
+            auto kb = std::make_shared<KeyboardInterface>(robot_name_);
+            kb->InitROS2(ri_ptr_->get_node());
+            uc_ptr_ = kb;
         }else if(remote_cmd_type_ == RemoteCommandType::kRetroidGamepad){
             // 使用 RobotInterface 的节点创建 RetroidGamepadInterface
             if(!ri_ptr_) {

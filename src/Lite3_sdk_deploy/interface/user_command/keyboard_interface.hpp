@@ -3,6 +3,8 @@
 
 #include "user_command_interface.h"
 #include "custom_types.h"
+#include <geometry_msgs/msg/twist.hpp>
+#include <rclcpp/rclcpp.hpp>
 #include <thread>
 #include <atomic>
 #include <unordered_map>
@@ -24,6 +26,8 @@ class KeyboardInterface : public UserCommandInterface
 private:
     std::atomic<bool> running_{false};
     std::thread kb_thread_;
+    bool use_ros2_ = false;
+    rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
     mutable std::mutex keys_mutex_;
 
     float max_forward_ = 0.7f;
@@ -105,6 +109,12 @@ private:
             usr_cmd_->target_mode = uint8_t(RobotMotionState::RLControlMode);
             std::cout << "[MODE] RL Control\n";
         }
+        else if (k == 'p') {
+            use_ros2_ = !use_ros2_;
+            usr_cmd_->forward_vel_scale = usr_cmd_->side_vel_scale = usr_cmd_->turnning_vel_scale = 0.0f;
+            if (use_ros2_) std::cout << "[HYBRID] Autonomous (Nav2 active, WASD ignored)\n";
+            else           std::cout << "[HYBRID] Manual (WASD active)\n";
+        }
     }
 
     void keyboard_loop()
@@ -130,13 +140,13 @@ private:
                 char k = std::tolower(static_cast<unsigned char>(ch));
 
                 // Handle mode commands
-                if (k == 'r' || k == 'z' || k == 'c') {
+                if (k == 'r' || k == 'z' || k == 'c' || k == 'p') {
                     process_mode_command(k);
                     continue;
                 }
 
-                // Track velocity keys
-                if (velocity_keys_.count(k)) {
+                // Track velocity keys (only in manual mode)
+                if (!use_ros2_ && velocity_keys_.count(k)) {
                     std::lock_guard<std::mutex> lock(keys_mutex_);
                     held_keys_.insert(k);
                     last_seen_time_[k] = now;
@@ -183,6 +193,21 @@ public:
     {
         std::cout << "[KeyboardInterface] Initialized with multi-key support\n";
         std::memset(usr_cmd_, 0, sizeof(UserCommand));
+    }
+
+    void InitROS2(rclcpp::Node::SharedPtr node) {
+        if (!node) return;
+        cmd_vel_sub_ = node->create_subscription<geometry_msgs::msg::Twist>(
+            "/cmd_vel", 10,
+            [this](const geometry_msgs::msg::Twist::SharedPtr msg) {
+                if (use_ros2_) {
+                    usr_cmd_->forward_vel_scale = static_cast<float>(msg->linear.x);
+                    usr_cmd_->side_vel_scale    = static_cast<float>(msg->linear.y);
+                    usr_cmd_->turnning_vel_scale = static_cast<float>(msg->angular.z);
+                }
+            }
+        );
+        std::cout << "[KeyboardInterface] Nav2 /cmd_vel subscribed. Press P to toggle.\n";
     }
 
     ~KeyboardInterface() 
