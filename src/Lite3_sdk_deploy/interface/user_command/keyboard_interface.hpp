@@ -173,13 +173,12 @@ private:
             // Compute velocity from all currently held keys
             float fwd = 0.0f, side = 0.0f, yaw = 0.0f;
             
-            if (msfb_->GetCurrentState() == RobotMotionState::RLControlMode) {
+            if (!use_ros2_ && msfb_->GetCurrentState() == RobotMotionState::RLControlMode) {
                 compute_velocity_from_held_keys(fwd, side, yaw);
+                usr_cmd_->forward_vel_scale  = fwd;
+                usr_cmd_->side_vel_scale     = side;
+                usr_cmd_->turnning_vel_scale = yaw;
             }
-            
-            usr_cmd_->forward_vel_scale  = fwd;
-            usr_cmd_->side_vel_scale     = side;
-            usr_cmd_->turnning_vel_scale = yaw;
 
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
