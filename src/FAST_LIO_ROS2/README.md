@@ -25,7 +25,7 @@
 > **1. Start FAST-LIO SLAM:**
 > ```bash
 > source install/setup.bash
-> ros2 launch fast_lio mapping.launch.py use_sim_time:=true config_file:=xt32.yaml
+> ros2 launch fast_lio mapping.launch.py use_sim_time:=true config_file:=xt32.yaml rviz:=true
 > ```
 > 
 > **2. Start Nav2 Navigation:**
@@ -36,6 +36,11 @@
 >    params_file:=/home/lite3/work/Lite3Robot/Lite3_sdk_deploy/nav2_lite3_params.yaml \
 >    use_composition:=False \
 >    use_respawn:=False
+> ```
+> 
+> **3. Start RViz for Nav2 (Optional):**
+> ```bash
+> ros2 launch nav2_bringup rviz_launch.py
 > ```
 >
 > ### **💾 How to Save the Map:**

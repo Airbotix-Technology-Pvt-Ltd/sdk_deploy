@@ -41,7 +41,7 @@
             scan_publish_en:  true       
             dense_publish_en: true       
             scan_bodyframe_pub_en: true  
-            child_frame_id: "lidar_link"
+            child_frame_id: "base_link"
 
         pcd_save:
             pcd_save_en: true
