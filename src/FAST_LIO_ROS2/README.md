@@ -21,9 +21,21 @@
 > ```
 >
 > ### **🚀 How to Run (Isaac Sim):**
+> 
+> **1. Start FAST-LIO SLAM:**
 > ```bash
 > source install/setup.bash
-> ros2 launch fast_lio mapping.launch.py config_file:=xt32.yaml use_sim_time:=true
+> ros2 launch fast_lio mapping.launch.py use_sim_time:=true config_file:=xt32.yaml
+> ```
+> 
+> **2. Start Nav2 Navigation:**
+> ```bash
+> ros2 launch nav2_bringup bringup_launch.py \
+>    use_sim_time:=true \
+>    map:=/home/lite3/work/Lite3Robot/Lite3_sdk_deploy/map.yaml \
+>    params_file:=/home/lite3/work/Lite3Robot/Lite3_sdk_deploy/nav2_lite3_params.yaml \
+>    use_composition:=False \
+>    use_respawn:=False
 > ```
 >
 > ### **💾 How to Save the Map:**
