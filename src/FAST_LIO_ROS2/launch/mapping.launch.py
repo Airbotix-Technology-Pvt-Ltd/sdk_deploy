@@ -35,7 +35,7 @@ def generate_launch_description():
         description='Config file'
     )
     declare_rviz_cmd = DeclareLaunchArgument(
-        'rviz', default_value='false',
+        'rviz', default_value='true',
         description='Use RViz to monitor results'
     )
     declare_rviz_config_path_cmd = DeclareLaunchArgument(

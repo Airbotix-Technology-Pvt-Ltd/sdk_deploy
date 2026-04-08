@@ -24,6 +24,47 @@ This document provides a detailed technical narrative of the **Lite3 RL & Naviga
 
 ---
 
+## 🚀 How to Run the Full Stack
+
+This sequence brings up the robot mapping, navigation loop, and locomotion policy in Isaac Sim. Ensure you have loaded `demo3.usd` in Isaac Sim before running these.
+
+**1. Start the Isaac-ROS Bridge:**
+```bash
+source install/setup.bash
+ros2 launch isaac_bridge bridge.launch.py
+```
+
+**2. Start the Lite3 RL Locomotion Policy:**
+```bash
+source install/setup.bash
+ros2 run lite3_sdk_deploy rl_deploy
+```
+
+**3. Start FAST-LIO SLAM:**
+```bash
+source install/setup.bash
+ros2 launch fast_lio mapping.launch.py use_sim_time:=true config_file:=xt32.yaml rviz:=false
+```
+
+**4. Start Nav2 Navigation:**
+```bash
+source install/setup.bash
+ros2 launch nav2_bringup bringup_launch.py \
+   use_sim_time:=true \
+   map:=/home/lite3/work/Lite3Robot/Lite3_sdk_deploy/map.yaml \
+   params_file:=/home/lite3/work/Lite3Robot/Lite3_sdk_deploy/nav2_lite3_params.yaml \
+   use_composition:=False \
+   use_respawn:=False
+```
+
+**5. Start RViz for Nav2 (Optional):**
+```bash
+source install/setup.bash
+ros2 launch nav2_bringup rviz_launch.py
+```
+
+---
+
 ## 🛠️ Core Components
 
 | Component | Role |
