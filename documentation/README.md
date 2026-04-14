@@ -130,6 +130,26 @@ map → odom → base_link → Lite3 → TORSO → legs
 
 ---
 
+## 🏆 Key Breakthrough: Bridging the Sim2Sim Domain Gap
+
+### The Deployment Jitter Problem
+During initial deployments, ML models trained in IsaacLab using standard `TerrainGeneratorCfg` procedural stairs exhibited massive instability and violent "jittering" when exported and run via the `isaac_bridge` inside Isaac Sim. 
+
+### The Solution: Direct CAD Integration
+We discovered that the "domain gap" was caused purely by collision geometry discrepancies between mathematically perfect procedural planes in training versus the highly-detailed 3D triangulation in deployment. 
+
+**Our golden rule for training:** We completely stripped out the procedural generator in our RL config and replaced it with a `TerrainImporterCfg` specifically pointing to our deployment CAD `.usda` mesh:
+```python
+self.scene.terrain = TerrainImporterCfg(
+    prim_path="/World/ground",
+    terrain_type="usd",
+    usd_path="/Path/To/deployment_mesh.usda",
+)
+```
+By forcing the RL Agent to train against the exact collision triangulation, friction, and mesh physics it will see in deployment, the Sim2Sim gap dropped to zero. The resulting model deploys flawlessly into Isaac Sim with zero jitter.
+
+---
+
 ## 💾 Replication & Documentation Reference
 - **Master Simulation File**: [demo3.usd](../src/isaac_bridge/isaacsim/environment/demo3.usd)
 - **SDK Service Guide**: [README_lite3_sdk_service.md](README_lite3_sdk_service.md) (Original DeepRobotics tech specs).
