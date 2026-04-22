@@ -33,12 +33,10 @@ except ImportError:
 MODEL_NAME = "Lite3"
 CURRENT_DIR = Path(__file__).resolve().parent
 
-# Default to the lidar-enabled XML generated previously
-# If the file is not in this directory, we assume it's in the lidar_sim folder we created
-XML_PATH = CURRENT_DIR / "lite3_lidar.xml"
+# Default to the official physics merged XML
+XML_PATH = CURRENT_DIR / "lite3_lidar_official.xml"
 if not XML_PATH.exists():
-    # Fallback to the lidar_sim directory
-    XML_PATH = Path("/home/lite3/work/Lite3Robot/Lite3_sdk_deploy/src/lidar_sim/lite3_lidar.xml")
+    XML_PATH = Path("/home/lite3/work/Lite3Robot/Lite3_sdk_deploy/src/Lite3_sdk_deploy/interface/robot/simulation/lite3_lidar_official.xml")
 
 USE_VIEWER = True
 DT = 0.001

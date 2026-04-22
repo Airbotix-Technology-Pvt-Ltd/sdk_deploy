@@ -14,7 +14,6 @@ import socket
 import struct
 import threading
 from pathlib import Path
-from scipy.spatial.transform import Rotation
 import numpy as np
 import mujoco
 import mujoco.viewer

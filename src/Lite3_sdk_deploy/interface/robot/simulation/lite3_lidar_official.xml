@@ -1,0 +1,916 @@
+<mujoco model="Lite3_Lidar_Official">
+  <default>
+    <default class="robot">
+      <default class="motor">
+        <joint />
+        <motor />
+      </default>
+      <default class="visual">
+        <geom material="default_material" contype="0" conaffinity="0" group="2" />
+      </default>
+      <default class="collision">
+        <geom material="collision_material" condim="3" contype="0" conaffinity="1" group="1" solref="0.005 1" friction="1 0.01 0.01" />
+        <equality solimp="0.99 0.999 1e-05" solref="0.005 1" />
+      </default>
+    </default>
+  </default>
+
+  <compiler angle="radian" />
+  <compiler autolimits="true" meshdir="../../../Lite3_description/lite3_mjcf/meshes/"/>
+
+  <asset>
+    <material name="default_material" rgba="0.7 0.7 0.7 1" />
+    <material name="collision_material" rgba="0.0 0.4 0.8 0.2" />
+    <texture type="2d" name="checker" builtin="checker" rgb1="0.2 0.3 0.4" rgb2="0.9 0.9 0.9" width="500" height="500"/>
+    <material name="checker_mat" texture="checker" specular="1" shininess="1" texrepeat="15 15"/>
+    <mesh name="torso.STL" file="torso.STL" />
+    <mesh name="fl_hip.STL" file="hip.STL" />
+    <mesh name="fl_thigh.STL" file="thigh.STL" />
+    <mesh name="fl_shank_collision.STL" file="shank.STL" />
+    <mesh name="fr_hip.STL" file="hip.STL" />
+    <mesh name="fr_thigh.STL" file="thigh.STL" scale="1 -1 1"/>
+    <mesh name="fr_shank_collision.STL" file="shank.STL" />
+    <mesh name="hl_hip.STL" file="hip.STL" />
+    <mesh name="hl_thigh.STL" file="thigh.STL" />
+    <mesh name="hl_shank_collision.STL" file="shank.STL" />
+    <mesh name="hr_hip.STL" file="hip.STL" />
+    <mesh name="hr_thigh.STL" file="thigh.STL" scale="1 -1 1"/>
+    <mesh name="hr_shank_collision.STL" file="shank.STL" />
+  </asset>
+
+  <worldbody>
+    <geom name="floor" type="plane" size="10 10 0.1" pos="0 0 0" material="checker_mat"/>
+    <light directional="true" pos="-0.5 0.5 3" dir="0 0 -1"/>
+
+    <body name="TORSO" pos="0 0. 0.35" quat="1 0 0 0" childclass="robot">
+      <freejoint name="floating_base" />
+      <site name="imu_site" pos="0 0 0" size="0.005" rgba="1 0 0 1"/>
+      <inertial pos="0 0 0" mass="5.6056" diaginertia="0.02456 0.05518 0.07016"/>
+      <geom name="TORSO_collision" type="mesh" mesh="torso.STL" class="collision" />
+      <geom name="TORSO_visual" type="mesh" mesh="torso.STL" class="visual" />
+
+      <!-- SENSORS START -->
+      <body name="lidar_mounting_body" pos="0.15 0 0.07">
+        <inertial pos="0 0 0" mass="0.01" diaginertia="0.0001 0.0001 0.0001"/>
+        <geom type="cylinder" size="0.03 0.02" rgba="0.1 0.1 0.1 1" />
+        <!-- 360 Lidar Beams -->
+        <!-- Beams generated in bridge -->
+        <site name="lidar_0" pos="0.0400 0.0000 0.02" zaxis="0.0400 0.0000 0.0" />
+        <site name="lidar_1" pos="0.0400 0.0007 0.02" zaxis="0.0400 0.0007 0.0" />
+        <site name="lidar_2" pos="0.0400 0.0014 0.02" zaxis="0.0400 0.0014 0.0" />
+        <site name="lidar_3" pos="0.0399 0.0021 0.02" zaxis="0.0399 0.0021 0.0" />
+        <site name="lidar_4" pos="0.0399 0.0028 0.02" zaxis="0.0399 0.0028 0.0" />
+        <site name="lidar_5" pos="0.0398 0.0035 0.02" zaxis="0.0398 0.0035 0.0" />
+        <site name="lidar_6" pos="0.0398 0.0042 0.02" zaxis="0.0398 0.0042 0.0" />
+        <site name="lidar_7" pos="0.0397 0.0049 0.02" zaxis="0.0397 0.0049 0.0" />
+        <site name="lidar_8" pos="0.0396 0.0056 0.02" zaxis="0.0396 0.0056 0.0" />
+        <site name="lidar_9" pos="0.0395 0.0063 0.02" zaxis="0.0395 0.0063 0.0" />
+        <site name="lidar_10" pos="0.0394 0.0069 0.02" zaxis="0.0394 0.0069 0.0" />
+        <site name="lidar_11" pos="0.0393 0.0076 0.02" zaxis="0.0393 0.0076 0.0" />
+        <site name="lidar_12" pos="0.0391 0.0083 0.02" zaxis="0.0391 0.0083 0.0" />
+        <site name="lidar_13" pos="0.0390 0.0090 0.02" zaxis="0.0390 0.0090 0.0" />
+        <site name="lidar_14" pos="0.0388 0.0097 0.02" zaxis="0.0388 0.0097 0.0" />
+        <site name="lidar_15" pos="0.0386 0.0104 0.02" zaxis="0.0386 0.0104 0.0" />
+        <site name="lidar_16" pos="0.0385 0.0110 0.02" zaxis="0.0385 0.0110 0.0" />
+        <site name="lidar_17" pos="0.0383 0.0117 0.02" zaxis="0.0383 0.0117 0.0" />
+        <site name="lidar_18" pos="0.0380 0.0124 0.02" zaxis="0.0380 0.0124 0.0" />
+        <site name="lidar_19" pos="0.0378 0.0130 0.02" zaxis="0.0378 0.0130 0.0" />
+        <site name="lidar_20" pos="0.0376 0.0137 0.02" zaxis="0.0376 0.0137 0.0" />
+        <site name="lidar_21" pos="0.0373 0.0143 0.02" zaxis="0.0373 0.0143 0.0" />
+        <site name="lidar_22" pos="0.0371 0.0150 0.02" zaxis="0.0371 0.0150 0.0" />
+        <site name="lidar_23" pos="0.0368 0.0156 0.02" zaxis="0.0368 0.0156 0.0" />
+        <site name="lidar_24" pos="0.0365 0.0163 0.02" zaxis="0.0365 0.0163 0.0" />
+        <site name="lidar_25" pos="0.0363 0.0169 0.02" zaxis="0.0363 0.0169 0.0" />
+        <site name="lidar_26" pos="0.0360 0.0175 0.02" zaxis="0.0360 0.0175 0.0" />
+        <site name="lidar_27" pos="0.0356 0.0182 0.02" zaxis="0.0356 0.0182 0.0" />
+        <site name="lidar_28" pos="0.0353 0.0188 0.02" zaxis="0.0353 0.0188 0.0" />
+        <site name="lidar_29" pos="0.0350 0.0194 0.02" zaxis="0.0350 0.0194 0.0" />
+        <site name="lidar_30" pos="0.0346 0.0200 0.02" zaxis="0.0346 0.0200 0.0" />
+        <site name="lidar_31" pos="0.0343 0.0206 0.02" zaxis="0.0343 0.0206 0.0" />
+        <site name="lidar_32" pos="0.0339 0.0212 0.02" zaxis="0.0339 0.0212 0.0" />
+        <site name="lidar_33" pos="0.0335 0.0218 0.02" zaxis="0.0335 0.0218 0.0" />
+        <site name="lidar_34" pos="0.0332 0.0224 0.02" zaxis="0.0332 0.0224 0.0" />
+        <site name="lidar_35" pos="0.0328 0.0229 0.02" zaxis="0.0328 0.0229 0.0" />
+        <site name="lidar_36" pos="0.0324 0.0235 0.02" zaxis="0.0324 0.0235 0.0" />
+        <site name="lidar_37" pos="0.0319 0.0241 0.02" zaxis="0.0319 0.0241 0.0" />
+        <site name="lidar_38" pos="0.0315 0.0246 0.02" zaxis="0.0315 0.0246 0.0" />
+        <site name="lidar_39" pos="0.0311 0.0252 0.02" zaxis="0.0311 0.0252 0.0" />
+        <site name="lidar_40" pos="0.0306 0.0257 0.02" zaxis="0.0306 0.0257 0.0" />
+        <site name="lidar_41" pos="0.0302 0.0262 0.02" zaxis="0.0302 0.0262 0.0" />
+        <site name="lidar_42" pos="0.0297 0.0268 0.02" zaxis="0.0297 0.0268 0.0" />
+        <site name="lidar_43" pos="0.0293 0.0273 0.02" zaxis="0.0293 0.0273 0.0" />
+        <site name="lidar_44" pos="0.0288 0.0278 0.02" zaxis="0.0288 0.0278 0.0" />
+        <site name="lidar_45" pos="0.0283 0.0283 0.02" zaxis="0.0283 0.0283 0.0" />
+        <site name="lidar_46" pos="0.0278 0.0288 0.02" zaxis="0.0278 0.0288 0.0" />
+        <site name="lidar_47" pos="0.0273 0.0293 0.02" zaxis="0.0273 0.0293 0.0" />
+        <site name="lidar_48" pos="0.0268 0.0297 0.02" zaxis="0.0268 0.0297 0.0" />
+        <site name="lidar_49" pos="0.0262 0.0302 0.02" zaxis="0.0262 0.0302 0.0" />
+        <site name="lidar_50" pos="0.0257 0.0306 0.02" zaxis="0.0257 0.0306 0.0" />
+        <site name="lidar_51" pos="0.0252 0.0311 0.02" zaxis="0.0252 0.0311 0.0" />
+        <site name="lidar_52" pos="0.0246 0.0315 0.02" zaxis="0.0246 0.0315 0.0" />
+        <site name="lidar_53" pos="0.0241 0.0319 0.02" zaxis="0.0241 0.0319 0.0" />
+        <site name="lidar_54" pos="0.0235 0.0324 0.02" zaxis="0.0235 0.0324 0.0" />
+        <site name="lidar_55" pos="0.0229 0.0328 0.02" zaxis="0.0229 0.0328 0.0" />
+        <site name="lidar_56" pos="0.0224 0.0332 0.02" zaxis="0.0224 0.0332 0.0" />
+        <site name="lidar_57" pos="0.0218 0.0335 0.02" zaxis="0.0218 0.0335 0.0" />
+        <site name="lidar_58" pos="0.0212 0.0339 0.02" zaxis="0.0212 0.0339 0.0" />
+        <site name="lidar_59" pos="0.0206 0.0343 0.02" zaxis="0.0206 0.0343 0.0" />
+        <site name="lidar_60" pos="0.0200 0.0346 0.02" zaxis="0.0200 0.0346 0.0" />
+        <site name="lidar_61" pos="0.0194 0.0350 0.02" zaxis="0.0194 0.0350 0.0" />
+        <site name="lidar_62" pos="0.0188 0.0353 0.02" zaxis="0.0188 0.0353 0.0" />
+        <site name="lidar_63" pos="0.0182 0.0356 0.02" zaxis="0.0182 0.0356 0.0" />
+        <site name="lidar_64" pos="0.0175 0.0360 0.02" zaxis="0.0175 0.0360 0.0" />
+        <site name="lidar_65" pos="0.0169 0.0363 0.02" zaxis="0.0169 0.0363 0.0" />
+        <site name="lidar_66" pos="0.0163 0.0365 0.02" zaxis="0.0163 0.0365 0.0" />
+        <site name="lidar_67" pos="0.0156 0.0368 0.02" zaxis="0.0156 0.0368 0.0" />
+        <site name="lidar_68" pos="0.0150 0.0371 0.02" zaxis="0.0150 0.0371 0.0" />
+        <site name="lidar_69" pos="0.0143 0.0373 0.02" zaxis="0.0143 0.0373 0.0" />
+        <site name="lidar_70" pos="0.0137 0.0376 0.02" zaxis="0.0137 0.0376 0.0" />
+        <site name="lidar_71" pos="0.0130 0.0378 0.02" zaxis="0.0130 0.0378 0.0" />
+        <site name="lidar_72" pos="0.0124 0.0380 0.02" zaxis="0.0124 0.0380 0.0" />
+        <site name="lidar_73" pos="0.0117 0.0383 0.02" zaxis="0.0117 0.0383 0.0" />
+        <site name="lidar_74" pos="0.0110 0.0385 0.02" zaxis="0.0110 0.0385 0.0" />
+        <site name="lidar_75" pos="0.0104 0.0386 0.02" zaxis="0.0104 0.0386 0.0" />
+        <site name="lidar_76" pos="0.0097 0.0388 0.02" zaxis="0.0097 0.0388 0.0" />
+        <site name="lidar_77" pos="0.0090 0.0390 0.02" zaxis="0.0090 0.0390 0.0" />
+        <site name="lidar_78" pos="0.0083 0.0391 0.02" zaxis="0.0083 0.0391 0.0" />
+        <site name="lidar_79" pos="0.0076 0.0393 0.02" zaxis="0.0076 0.0393 0.0" />
+        <site name="lidar_80" pos="0.0069 0.0394 0.02" zaxis="0.0069 0.0394 0.0" />
+        <site name="lidar_81" pos="0.0063 0.0395 0.02" zaxis="0.0063 0.0395 0.0" />
+        <site name="lidar_82" pos="0.0056 0.0396 0.02" zaxis="0.0056 0.0396 0.0" />
+        <site name="lidar_83" pos="0.0049 0.0397 0.02" zaxis="0.0049 0.0397 0.0" />
+        <site name="lidar_84" pos="0.0042 0.0398 0.02" zaxis="0.0042 0.0398 0.0" />
+        <site name="lidar_85" pos="0.0035 0.0398 0.02" zaxis="0.0035 0.0398 0.0" />
+        <site name="lidar_86" pos="0.0028 0.0399 0.02" zaxis="0.0028 0.0399 0.0" />
+        <site name="lidar_87" pos="0.0021 0.0399 0.02" zaxis="0.0021 0.0399 0.0" />
+        <site name="lidar_88" pos="0.0014 0.0400 0.02" zaxis="0.0014 0.0400 0.0" />
+        <site name="lidar_89" pos="0.0007 0.0400 0.02" zaxis="0.0007 0.0400 0.0" />
+        <site name="lidar_90" pos="0.0000 0.0400 0.02" zaxis="0.0000 0.0400 0.0" />
+        <site name="lidar_91" pos="-0.0007 0.0400 0.02" zaxis="-0.0007 0.0400 0.0" />
+        <site name="lidar_92" pos="-0.0014 0.0400 0.02" zaxis="-0.0014 0.0400 0.0" />
+        <site name="lidar_93" pos="-0.0021 0.0399 0.02" zaxis="-0.0021 0.0399 0.0" />
+        <site name="lidar_94" pos="-0.0028 0.0399 0.02" zaxis="-0.0028 0.0399 0.0" />
+        <site name="lidar_95" pos="-0.0035 0.0398 0.02" zaxis="-0.0035 0.0398 0.0" />
+        <site name="lidar_96" pos="-0.0042 0.0398 0.02" zaxis="-0.0042 0.0398 0.0" />
+        <site name="lidar_97" pos="-0.0049 0.0397 0.02" zaxis="-0.0049 0.0397 0.0" />
+        <site name="lidar_98" pos="-0.0056 0.0396 0.02" zaxis="-0.0056 0.0396 0.0" />
+        <site name="lidar_99" pos="-0.0063 0.0395 0.02" zaxis="-0.0063 0.0395 0.0" />
+        <site name="lidar_100" pos="-0.0069 0.0394 0.02" zaxis="-0.0069 0.0394 0.0" />
+        <site name="lidar_101" pos="-0.0076 0.0393 0.02" zaxis="-0.0076 0.0393 0.0" />
+        <site name="lidar_102" pos="-0.0083 0.0391 0.02" zaxis="-0.0083 0.0391 0.0" />
+        <site name="lidar_103" pos="-0.0090 0.0390 0.02" zaxis="-0.0090 0.0390 0.0" />
+        <site name="lidar_104" pos="-0.0097 0.0388 0.02" zaxis="-0.0097 0.0388 0.0" />
+        <site name="lidar_105" pos="-0.0104 0.0386 0.02" zaxis="-0.0104 0.0386 0.0" />
+        <site name="lidar_106" pos="-0.0110 0.0385 0.02" zaxis="-0.0110 0.0385 0.0" />
+        <site name="lidar_107" pos="-0.0117 0.0383 0.02" zaxis="-0.0117 0.0383 0.0" />
+        <site name="lidar_108" pos="-0.0124 0.0380 0.02" zaxis="-0.0124 0.0380 0.0" />
+        <site name="lidar_109" pos="-0.0130 0.0378 0.02" zaxis="-0.0130 0.0378 0.0" />
+        <site name="lidar_110" pos="-0.0137 0.0376 0.02" zaxis="-0.0137 0.0376 0.0" />
+        <site name="lidar_111" pos="-0.0143 0.0373 0.02" zaxis="-0.0143 0.0373 0.0" />
+        <site name="lidar_112" pos="-0.0150 0.0371 0.02" zaxis="-0.0150 0.0371 0.0" />
+        <site name="lidar_113" pos="-0.0156 0.0368 0.02" zaxis="-0.0156 0.0368 0.0" />
+        <site name="lidar_114" pos="-0.0163 0.0365 0.02" zaxis="-0.0163 0.0365 0.0" />
+        <site name="lidar_115" pos="-0.0169 0.0363 0.02" zaxis="-0.0169 0.0363 0.0" />
+        <site name="lidar_116" pos="-0.0175 0.0360 0.02" zaxis="-0.0175 0.0360 0.0" />
+        <site name="lidar_117" pos="-0.0182 0.0356 0.02" zaxis="-0.0182 0.0356 0.0" />
+        <site name="lidar_118" pos="-0.0188 0.0353 0.02" zaxis="-0.0188 0.0353 0.0" />
+        <site name="lidar_119" pos="-0.0194 0.0350 0.02" zaxis="-0.0194 0.0350 0.0" />
+        <site name="lidar_120" pos="-0.0200 0.0346 0.02" zaxis="-0.0200 0.0346 0.0" />
+        <site name="lidar_121" pos="-0.0206 0.0343 0.02" zaxis="-0.0206 0.0343 0.0" />
+        <site name="lidar_122" pos="-0.0212 0.0339 0.02" zaxis="-0.0212 0.0339 0.0" />
+        <site name="lidar_123" pos="-0.0218 0.0335 0.02" zaxis="-0.0218 0.0335 0.0" />
+        <site name="lidar_124" pos="-0.0224 0.0332 0.02" zaxis="-0.0224 0.0332 0.0" />
+        <site name="lidar_125" pos="-0.0229 0.0328 0.02" zaxis="-0.0229 0.0328 0.0" />
+        <site name="lidar_126" pos="-0.0235 0.0324 0.02" zaxis="-0.0235 0.0324 0.0" />
+        <site name="lidar_127" pos="-0.0241 0.0319 0.02" zaxis="-0.0241 0.0319 0.0" />
+        <site name="lidar_128" pos="-0.0246 0.0315 0.02" zaxis="-0.0246 0.0315 0.0" />
+        <site name="lidar_129" pos="-0.0252 0.0311 0.02" zaxis="-0.0252 0.0311 0.0" />
+        <site name="lidar_130" pos="-0.0257 0.0306 0.02" zaxis="-0.0257 0.0306 0.0" />
+        <site name="lidar_131" pos="-0.0262 0.0302 0.02" zaxis="-0.0262 0.0302 0.0" />
+        <site name="lidar_132" pos="-0.0268 0.0297 0.02" zaxis="-0.0268 0.0297 0.0" />
+        <site name="lidar_133" pos="-0.0273 0.0293 0.02" zaxis="-0.0273 0.0293 0.0" />
+        <site name="lidar_134" pos="-0.0278 0.0288 0.02" zaxis="-0.0278 0.0288 0.0" />
+        <site name="lidar_135" pos="-0.0283 0.0283 0.02" zaxis="-0.0283 0.0283 0.0" />
+        <site name="lidar_136" pos="-0.0288 0.0278 0.02" zaxis="-0.0288 0.0278 0.0" />
+        <site name="lidar_137" pos="-0.0293 0.0273 0.02" zaxis="-0.0293 0.0273 0.0" />
+        <site name="lidar_138" pos="-0.0297 0.0268 0.02" zaxis="-0.0297 0.0268 0.0" />
+        <site name="lidar_139" pos="-0.0302 0.0262 0.02" zaxis="-0.0302 0.0262 0.0" />
+        <site name="lidar_140" pos="-0.0306 0.0257 0.02" zaxis="-0.0306 0.0257 0.0" />
+        <site name="lidar_141" pos="-0.0311 0.0252 0.02" zaxis="-0.0311 0.0252 0.0" />
+        <site name="lidar_142" pos="-0.0315 0.0246 0.02" zaxis="-0.0315 0.0246 0.0" />
+        <site name="lidar_143" pos="-0.0319 0.0241 0.02" zaxis="-0.0319 0.0241 0.0" />
+        <site name="lidar_144" pos="-0.0324 0.0235 0.02" zaxis="-0.0324 0.0235 0.0" />
+        <site name="lidar_145" pos="-0.0328 0.0229 0.02" zaxis="-0.0328 0.0229 0.0" />
+        <site name="lidar_146" pos="-0.0332 0.0224 0.02" zaxis="-0.0332 0.0224 0.0" />
+        <site name="lidar_147" pos="-0.0335 0.0218 0.02" zaxis="-0.0335 0.0218 0.0" />
+        <site name="lidar_148" pos="-0.0339 0.0212 0.02" zaxis="-0.0339 0.0212 0.0" />
+        <site name="lidar_149" pos="-0.0343 0.0206 0.02" zaxis="-0.0343 0.0206 0.0" />
+        <site name="lidar_150" pos="-0.0346 0.0200 0.02" zaxis="-0.0346 0.0200 0.0" />
+        <site name="lidar_151" pos="-0.0350 0.0194 0.02" zaxis="-0.0350 0.0194 0.0" />
+        <site name="lidar_152" pos="-0.0353 0.0188 0.02" zaxis="-0.0353 0.0188 0.0" />
+        <site name="lidar_153" pos="-0.0356 0.0182 0.02" zaxis="-0.0356 0.0182 0.0" />
+        <site name="lidar_154" pos="-0.0360 0.0175 0.02" zaxis="-0.0360 0.0175 0.0" />
+        <site name="lidar_155" pos="-0.0363 0.0169 0.02" zaxis="-0.0363 0.0169 0.0" />
+        <site name="lidar_156" pos="-0.0365 0.0163 0.02" zaxis="-0.0365 0.0163 0.0" />
+        <site name="lidar_157" pos="-0.0368 0.0156 0.02" zaxis="-0.0368 0.0156 0.0" />
+        <site name="lidar_158" pos="-0.0371 0.0150 0.02" zaxis="-0.0371 0.0150 0.0" />
+        <site name="lidar_159" pos="-0.0373 0.0143 0.02" zaxis="-0.0373 0.0143 0.0" />
+        <site name="lidar_160" pos="-0.0376 0.0137 0.02" zaxis="-0.0376 0.0137 0.0" />
+        <site name="lidar_161" pos="-0.0378 0.0130 0.02" zaxis="-0.0378 0.0130 0.0" />
+        <site name="lidar_162" pos="-0.0380 0.0124 0.02" zaxis="-0.0380 0.0124 0.0" />
+        <site name="lidar_163" pos="-0.0383 0.0117 0.02" zaxis="-0.0383 0.0117 0.0" />
+        <site name="lidar_164" pos="-0.0385 0.0110 0.02" zaxis="-0.0385 0.0110 0.0" />
+        <site name="lidar_165" pos="-0.0386 0.0104 0.02" zaxis="-0.0386 0.0104 0.0" />
+        <site name="lidar_166" pos="-0.0388 0.0097 0.02" zaxis="-0.0388 0.0097 0.0" />
+        <site name="lidar_167" pos="-0.0390 0.0090 0.02" zaxis="-0.0390 0.0090 0.0" />
+        <site name="lidar_168" pos="-0.0391 0.0083 0.02" zaxis="-0.0391 0.0083 0.0" />
+        <site name="lidar_169" pos="-0.0393 0.0076 0.02" zaxis="-0.0393 0.0076 0.0" />
+        <site name="lidar_170" pos="-0.0394 0.0069 0.02" zaxis="-0.0394 0.0069 0.0" />
+        <site name="lidar_171" pos="-0.0395 0.0063 0.02" zaxis="-0.0395 0.0063 0.0" />
+        <site name="lidar_172" pos="-0.0396 0.0056 0.02" zaxis="-0.0396 0.0056 0.0" />
+        <site name="lidar_173" pos="-0.0397 0.0049 0.02" zaxis="-0.0397 0.0049 0.0" />
+        <site name="lidar_174" pos="-0.0398 0.0042 0.02" zaxis="-0.0398 0.0042 0.0" />
+        <site name="lidar_175" pos="-0.0398 0.0035 0.02" zaxis="-0.0398 0.0035 0.0" />
+        <site name="lidar_176" pos="-0.0399 0.0028 0.02" zaxis="-0.0399 0.0028 0.0" />
+        <site name="lidar_177" pos="-0.0399 0.0021 0.02" zaxis="-0.0399 0.0021 0.0" />
+        <site name="lidar_178" pos="-0.0400 0.0014 0.02" zaxis="-0.0400 0.0014 0.0" />
+        <site name="lidar_179" pos="-0.0400 0.0007 0.02" zaxis="-0.0400 0.0007 0.0" />
+        <site name="lidar_180" pos="-0.0400 0.0000 0.02" zaxis="-0.0400 0.0000 0.0" />
+        <site name="lidar_181" pos="-0.0400 -0.0007 0.02" zaxis="-0.0400 -0.0007 0.0" />
+        <site name="lidar_182" pos="-0.0400 -0.0014 0.02" zaxis="-0.0400 -0.0014 0.0" />
+        <site name="lidar_183" pos="-0.0399 -0.0021 0.02" zaxis="-0.0399 -0.0021 0.0" />
+        <site name="lidar_184" pos="-0.0399 -0.0028 0.02" zaxis="-0.0399 -0.0028 0.0" />
+        <site name="lidar_185" pos="-0.0398 -0.0035 0.02" zaxis="-0.0398 -0.0035 0.0" />
+        <site name="lidar_186" pos="-0.0398 -0.0042 0.02" zaxis="-0.0398 -0.0042 0.0" />
+        <site name="lidar_187" pos="-0.0397 -0.0049 0.02" zaxis="-0.0397 -0.0049 0.0" />
+        <site name="lidar_188" pos="-0.0396 -0.0056 0.02" zaxis="-0.0396 -0.0056 0.0" />
+        <site name="lidar_189" pos="-0.0395 -0.0063 0.02" zaxis="-0.0395 -0.0063 0.0" />
+        <site name="lidar_190" pos="-0.0394 -0.0069 0.02" zaxis="-0.0394 -0.0069 0.0" />
+        <site name="lidar_191" pos="-0.0393 -0.0076 0.02" zaxis="-0.0393 -0.0076 0.0" />
+        <site name="lidar_192" pos="-0.0391 -0.0083 0.02" zaxis="-0.0391 -0.0083 0.0" />
+        <site name="lidar_193" pos="-0.0390 -0.0090 0.02" zaxis="-0.0390 -0.0090 0.0" />
+        <site name="lidar_194" pos="-0.0388 -0.0097 0.02" zaxis="-0.0388 -0.0097 0.0" />
+        <site name="lidar_195" pos="-0.0386 -0.0104 0.02" zaxis="-0.0386 -0.0104 0.0" />
+        <site name="lidar_196" pos="-0.0385 -0.0110 0.02" zaxis="-0.0385 -0.0110 0.0" />
+        <site name="lidar_197" pos="-0.0383 -0.0117 0.02" zaxis="-0.0383 -0.0117 0.0" />
+        <site name="lidar_198" pos="-0.0380 -0.0124 0.02" zaxis="-0.0380 -0.0124 0.0" />
+        <site name="lidar_199" pos="-0.0378 -0.0130 0.02" zaxis="-0.0378 -0.0130 0.0" />
+        <site name="lidar_200" pos="-0.0376 -0.0137 0.02" zaxis="-0.0376 -0.0137 0.0" />
+        <site name="lidar_201" pos="-0.0373 -0.0143 0.02" zaxis="-0.0373 -0.0143 0.0" />
+        <site name="lidar_202" pos="-0.0371 -0.0150 0.02" zaxis="-0.0371 -0.0150 0.0" />
+        <site name="lidar_203" pos="-0.0368 -0.0156 0.02" zaxis="-0.0368 -0.0156 0.0" />
+        <site name="lidar_204" pos="-0.0365 -0.0163 0.02" zaxis="-0.0365 -0.0163 0.0" />
+        <site name="lidar_205" pos="-0.0363 -0.0169 0.02" zaxis="-0.0363 -0.0169 0.0" />
+        <site name="lidar_206" pos="-0.0360 -0.0175 0.02" zaxis="-0.0360 -0.0175 0.0" />
+        <site name="lidar_207" pos="-0.0356 -0.0182 0.02" zaxis="-0.0356 -0.0182 0.0" />
+        <site name="lidar_208" pos="-0.0353 -0.0188 0.02" zaxis="-0.0353 -0.0188 0.0" />
+        <site name="lidar_209" pos="-0.0350 -0.0194 0.02" zaxis="-0.0350 -0.0194 0.0" />
+        <site name="lidar_210" pos="-0.0346 -0.0200 0.02" zaxis="-0.0346 -0.0200 0.0" />
+        <site name="lidar_211" pos="-0.0343 -0.0206 0.02" zaxis="-0.0343 -0.0206 0.0" />
+        <site name="lidar_212" pos="-0.0339 -0.0212 0.02" zaxis="-0.0339 -0.0212 0.0" />
+        <site name="lidar_213" pos="-0.0335 -0.0218 0.02" zaxis="-0.0335 -0.0218 0.0" />
+        <site name="lidar_214" pos="-0.0332 -0.0224 0.02" zaxis="-0.0332 -0.0224 0.0" />
+        <site name="lidar_215" pos="-0.0328 -0.0229 0.02" zaxis="-0.0328 -0.0229 0.0" />
+        <site name="lidar_216" pos="-0.0324 -0.0235 0.02" zaxis="-0.0324 -0.0235 0.0" />
+        <site name="lidar_217" pos="-0.0319 -0.0241 0.02" zaxis="-0.0319 -0.0241 0.0" />
+        <site name="lidar_218" pos="-0.0315 -0.0246 0.02" zaxis="-0.0315 -0.0246 0.0" />
+        <site name="lidar_219" pos="-0.0311 -0.0252 0.02" zaxis="-0.0311 -0.0252 0.0" />
+        <site name="lidar_220" pos="-0.0306 -0.0257 0.02" zaxis="-0.0306 -0.0257 0.0" />
+        <site name="lidar_221" pos="-0.0302 -0.0262 0.02" zaxis="-0.0302 -0.0262 0.0" />
+        <site name="lidar_222" pos="-0.0297 -0.0268 0.02" zaxis="-0.0297 -0.0268 0.0" />
+        <site name="lidar_223" pos="-0.0293 -0.0273 0.02" zaxis="-0.0293 -0.0273 0.0" />
+        <site name="lidar_224" pos="-0.0288 -0.0278 0.02" zaxis="-0.0288 -0.0278 0.0" />
+        <site name="lidar_225" pos="-0.0283 -0.0283 0.02" zaxis="-0.0283 -0.0283 0.0" />
+        <site name="lidar_226" pos="-0.0278 -0.0288 0.02" zaxis="-0.0278 -0.0288 0.0" />
+        <site name="lidar_227" pos="-0.0273 -0.0293 0.02" zaxis="-0.0273 -0.0293 0.0" />
+        <site name="lidar_228" pos="-0.0268 -0.0297 0.02" zaxis="-0.0268 -0.0297 0.0" />
+        <site name="lidar_229" pos="-0.0262 -0.0302 0.02" zaxis="-0.0262 -0.0302 0.0" />
+        <site name="lidar_230" pos="-0.0257 -0.0306 0.02" zaxis="-0.0257 -0.0306 0.0" />
+        <site name="lidar_231" pos="-0.0252 -0.0311 0.02" zaxis="-0.0252 -0.0311 0.0" />
+        <site name="lidar_232" pos="-0.0246 -0.0315 0.02" zaxis="-0.0246 -0.0315 0.0" />
+        <site name="lidar_233" pos="-0.0241 -0.0319 0.02" zaxis="-0.0241 -0.0319 0.0" />
+        <site name="lidar_234" pos="-0.0235 -0.0324 0.02" zaxis="-0.0235 -0.0324 0.0" />
+        <site name="lidar_235" pos="-0.0229 -0.0328 0.02" zaxis="-0.0229 -0.0328 0.0" />
+        <site name="lidar_236" pos="-0.0224 -0.0332 0.02" zaxis="-0.0224 -0.0332 0.0" />
+        <site name="lidar_237" pos="-0.0218 -0.0335 0.02" zaxis="-0.0218 -0.0335 0.0" />
+        <site name="lidar_238" pos="-0.0212 -0.0339 0.02" zaxis="-0.0212 -0.0339 0.0" />
+        <site name="lidar_239" pos="-0.0206 -0.0343 0.02" zaxis="-0.0206 -0.0343 0.0" />
+        <site name="lidar_240" pos="-0.0200 -0.0346 0.02" zaxis="-0.0200 -0.0346 0.0" />
+        <site name="lidar_241" pos="-0.0194 -0.0350 0.02" zaxis="-0.0194 -0.0350 0.0" />
+        <site name="lidar_242" pos="-0.0188 -0.0353 0.02" zaxis="-0.0188 -0.0353 0.0" />
+        <site name="lidar_243" pos="-0.0182 -0.0356 0.02" zaxis="-0.0182 -0.0356 0.0" />
+        <site name="lidar_244" pos="-0.0175 -0.0360 0.02" zaxis="-0.0175 -0.0360 0.0" />
+        <site name="lidar_245" pos="-0.0169 -0.0363 0.02" zaxis="-0.0169 -0.0363 0.0" />
+        <site name="lidar_246" pos="-0.0163 -0.0365 0.02" zaxis="-0.0163 -0.0365 0.0" />
+        <site name="lidar_247" pos="-0.0156 -0.0368 0.02" zaxis="-0.0156 -0.0368 0.0" />
+        <site name="lidar_248" pos="-0.0150 -0.0371 0.02" zaxis="-0.0150 -0.0371 0.0" />
+        <site name="lidar_249" pos="-0.0143 -0.0373 0.02" zaxis="-0.0143 -0.0373 0.0" />
+        <site name="lidar_250" pos="-0.0137 -0.0376 0.02" zaxis="-0.0137 -0.0376 0.0" />
+        <site name="lidar_251" pos="-0.0130 -0.0378 0.02" zaxis="-0.0130 -0.0378 0.0" />
+        <site name="lidar_252" pos="-0.0124 -0.0380 0.02" zaxis="-0.0124 -0.0380 0.0" />
+        <site name="lidar_253" pos="-0.0117 -0.0383 0.02" zaxis="-0.0117 -0.0383 0.0" />
+        <site name="lidar_254" pos="-0.0110 -0.0385 0.02" zaxis="-0.0110 -0.0385 0.0" />
+        <site name="lidar_255" pos="-0.0104 -0.0386 0.02" zaxis="-0.0104 -0.0386 0.0" />
+        <site name="lidar_256" pos="-0.0097 -0.0388 0.02" zaxis="-0.0097 -0.0388 0.0" />
+        <site name="lidar_257" pos="-0.0090 -0.0390 0.02" zaxis="-0.0090 -0.0390 0.0" />
+        <site name="lidar_258" pos="-0.0083 -0.0391 0.02" zaxis="-0.0083 -0.0391 0.0" />
+        <site name="lidar_259" pos="-0.0076 -0.0393 0.02" zaxis="-0.0076 -0.0393 0.0" />
+        <site name="lidar_260" pos="-0.0069 -0.0394 0.02" zaxis="-0.0069 -0.0394 0.0" />
+        <site name="lidar_261" pos="-0.0063 -0.0395 0.02" zaxis="-0.0063 -0.0395 0.0" />
+        <site name="lidar_262" pos="-0.0056 -0.0396 0.02" zaxis="-0.0056 -0.0396 0.0" />
+        <site name="lidar_263" pos="-0.0049 -0.0397 0.02" zaxis="-0.0049 -0.0397 0.0" />
+        <site name="lidar_264" pos="-0.0042 -0.0398 0.02" zaxis="-0.0042 -0.0398 0.0" />
+        <site name="lidar_265" pos="-0.0035 -0.0398 0.02" zaxis="-0.0035 -0.0398 0.0" />
+        <site name="lidar_266" pos="-0.0028 -0.0399 0.02" zaxis="-0.0028 -0.0399 0.0" />
+        <site name="lidar_267" pos="-0.0021 -0.0399 0.02" zaxis="-0.0021 -0.0399 0.0" />
+        <site name="lidar_268" pos="-0.0014 -0.0400 0.02" zaxis="-0.0014 -0.0400 0.0" />
+        <site name="lidar_269" pos="-0.0007 -0.0400 0.02" zaxis="-0.0007 -0.0400 0.0" />
+        <site name="lidar_270" pos="-0.0000 -0.0400 0.02" zaxis="-0.0000 -0.0400 0.0" />
+        <site name="lidar_271" pos="0.0007 -0.0400 0.02" zaxis="0.0007 -0.0400 0.0" />
+        <site name="lidar_272" pos="0.0014 -0.0400 0.02" zaxis="0.0014 -0.0400 0.0" />
+        <site name="lidar_273" pos="0.0021 -0.0399 0.02" zaxis="0.0021 -0.0399 0.0" />
+        <site name="lidar_274" pos="0.0028 -0.0399 0.02" zaxis="0.0028 -0.0399 0.0" />
+        <site name="lidar_275" pos="0.0035 -0.0398 0.02" zaxis="0.0035 -0.0398 0.0" />
+        <site name="lidar_276" pos="0.0042 -0.0398 0.02" zaxis="0.0042 -0.0398 0.0" />
+        <site name="lidar_277" pos="0.0049 -0.0397 0.02" zaxis="0.0049 -0.0397 0.0" />
+        <site name="lidar_278" pos="0.0056 -0.0396 0.02" zaxis="0.0056 -0.0396 0.0" />
+        <site name="lidar_279" pos="0.0063 -0.0395 0.02" zaxis="0.0063 -0.0395 0.0" />
+        <site name="lidar_280" pos="0.0069 -0.0394 0.02" zaxis="0.0069 -0.0394 0.0" />
+        <site name="lidar_281" pos="0.0076 -0.0393 0.02" zaxis="0.0076 -0.0393 0.0" />
+        <site name="lidar_282" pos="0.0083 -0.0391 0.02" zaxis="0.0083 -0.0391 0.0" />
+        <site name="lidar_283" pos="0.0090 -0.0390 0.02" zaxis="0.0090 -0.0390 0.0" />
+        <site name="lidar_284" pos="0.0097 -0.0388 0.02" zaxis="0.0097 -0.0388 0.0" />
+        <site name="lidar_285" pos="0.0104 -0.0386 0.02" zaxis="0.0104 -0.0386 0.0" />
+        <site name="lidar_286" pos="0.0110 -0.0385 0.02" zaxis="0.0110 -0.0385 0.0" />
+        <site name="lidar_287" pos="0.0117 -0.0383 0.02" zaxis="0.0117 -0.0383 0.0" />
+        <site name="lidar_288" pos="0.0124 -0.0380 0.02" zaxis="0.0124 -0.0380 0.0" />
+        <site name="lidar_289" pos="0.0130 -0.0378 0.02" zaxis="0.0130 -0.0378 0.0" />
+        <site name="lidar_290" pos="0.0137 -0.0376 0.02" zaxis="0.0137 -0.0376 0.0" />
+        <site name="lidar_291" pos="0.0143 -0.0373 0.02" zaxis="0.0143 -0.0373 0.0" />
+        <site name="lidar_292" pos="0.0150 -0.0371 0.02" zaxis="0.0150 -0.0371 0.0" />
+        <site name="lidar_293" pos="0.0156 -0.0368 0.02" zaxis="0.0156 -0.0368 0.0" />
+        <site name="lidar_294" pos="0.0163 -0.0365 0.02" zaxis="0.0163 -0.0365 0.0" />
+        <site name="lidar_295" pos="0.0169 -0.0363 0.02" zaxis="0.0169 -0.0363 0.0" />
+        <site name="lidar_296" pos="0.0175 -0.0360 0.02" zaxis="0.0175 -0.0360 0.0" />
+        <site name="lidar_297" pos="0.0182 -0.0356 0.02" zaxis="0.0182 -0.0356 0.0" />
+        <site name="lidar_298" pos="0.0188 -0.0353 0.02" zaxis="0.0188 -0.0353 0.0" />
+        <site name="lidar_299" pos="0.0194 -0.0350 0.02" zaxis="0.0194 -0.0350 0.0" />
+        <site name="lidar_300" pos="0.0200 -0.0346 0.02" zaxis="0.0200 -0.0346 0.0" />
+        <site name="lidar_301" pos="0.0206 -0.0343 0.02" zaxis="0.0206 -0.0343 0.0" />
+        <site name="lidar_302" pos="0.0212 -0.0339 0.02" zaxis="0.0212 -0.0339 0.0" />
+        <site name="lidar_303" pos="0.0218 -0.0335 0.02" zaxis="0.0218 -0.0335 0.0" />
+        <site name="lidar_304" pos="0.0224 -0.0332 0.02" zaxis="0.0224 -0.0332 0.0" />
+        <site name="lidar_305" pos="0.0229 -0.0328 0.02" zaxis="0.0229 -0.0328 0.0" />
+        <site name="lidar_306" pos="0.0235 -0.0324 0.02" zaxis="0.0235 -0.0324 0.0" />
+        <site name="lidar_307" pos="0.0241 -0.0319 0.02" zaxis="0.0241 -0.0319 0.0" />
+        <site name="lidar_308" pos="0.0246 -0.0315 0.02" zaxis="0.0246 -0.0315 0.0" />
+        <site name="lidar_309" pos="0.0252 -0.0311 0.02" zaxis="0.0252 -0.0311 0.0" />
+        <site name="lidar_310" pos="0.0257 -0.0306 0.02" zaxis="0.0257 -0.0306 0.0" />
+        <site name="lidar_311" pos="0.0262 -0.0302 0.02" zaxis="0.0262 -0.0302 0.0" />
+        <site name="lidar_312" pos="0.0268 -0.0297 0.02" zaxis="0.0268 -0.0297 0.0" />
+        <site name="lidar_313" pos="0.0273 -0.0293 0.02" zaxis="0.0273 -0.0293 0.0" />
+        <site name="lidar_314" pos="0.0278 -0.0288 0.02" zaxis="0.0278 -0.0288 0.0" />
+        <site name="lidar_315" pos="0.0283 -0.0283 0.02" zaxis="0.0283 -0.0283 0.0" />
+        <site name="lidar_316" pos="0.0288 -0.0278 0.02" zaxis="0.0288 -0.0278 0.0" />
+        <site name="lidar_317" pos="0.0293 -0.0273 0.02" zaxis="0.0293 -0.0273 0.0" />
+        <site name="lidar_318" pos="0.0297 -0.0268 0.02" zaxis="0.0297 -0.0268 0.0" />
+        <site name="lidar_319" pos="0.0302 -0.0262 0.02" zaxis="0.0302 -0.0262 0.0" />
+        <site name="lidar_320" pos="0.0306 -0.0257 0.02" zaxis="0.0306 -0.0257 0.0" />
+        <site name="lidar_321" pos="0.0311 -0.0252 0.02" zaxis="0.0311 -0.0252 0.0" />
+        <site name="lidar_322" pos="0.0315 -0.0246 0.02" zaxis="0.0315 -0.0246 0.0" />
+        <site name="lidar_323" pos="0.0319 -0.0241 0.02" zaxis="0.0319 -0.0241 0.0" />
+        <site name="lidar_324" pos="0.0324 -0.0235 0.02" zaxis="0.0324 -0.0235 0.0" />
+        <site name="lidar_325" pos="0.0328 -0.0229 0.02" zaxis="0.0328 -0.0229 0.0" />
+        <site name="lidar_326" pos="0.0332 -0.0224 0.02" zaxis="0.0332 -0.0224 0.0" />
+        <site name="lidar_327" pos="0.0335 -0.0218 0.02" zaxis="0.0335 -0.0218 0.0" />
+        <site name="lidar_328" pos="0.0339 -0.0212 0.02" zaxis="0.0339 -0.0212 0.0" />
+        <site name="lidar_329" pos="0.0343 -0.0206 0.02" zaxis="0.0343 -0.0206 0.0" />
+        <site name="lidar_330" pos="0.0346 -0.0200 0.02" zaxis="0.0346 -0.0200 0.0" />
+        <site name="lidar_331" pos="0.0350 -0.0194 0.02" zaxis="0.0350 -0.0194 0.0" />
+        <site name="lidar_332" pos="0.0353 -0.0188 0.02" zaxis="0.0353 -0.0188 0.0" />
+        <site name="lidar_333" pos="0.0356 -0.0182 0.02" zaxis="0.0356 -0.0182 0.0" />
+        <site name="lidar_334" pos="0.0360 -0.0175 0.02" zaxis="0.0360 -0.0175 0.0" />
+        <site name="lidar_335" pos="0.0363 -0.0169 0.02" zaxis="0.0363 -0.0169 0.0" />
+        <site name="lidar_336" pos="0.0365 -0.0163 0.02" zaxis="0.0365 -0.0163 0.0" />
+        <site name="lidar_337" pos="0.0368 -0.0156 0.02" zaxis="0.0368 -0.0156 0.0" />
+        <site name="lidar_338" pos="0.0371 -0.0150 0.02" zaxis="0.0371 -0.0150 0.0" />
+        <site name="lidar_339" pos="0.0373 -0.0143 0.02" zaxis="0.0373 -0.0143 0.0" />
+        <site name="lidar_340" pos="0.0376 -0.0137 0.02" zaxis="0.0376 -0.0137 0.0" />
+        <site name="lidar_341" pos="0.0378 -0.0130 0.02" zaxis="0.0378 -0.0130 0.0" />
+        <site name="lidar_342" pos="0.0380 -0.0124 0.02" zaxis="0.0380 -0.0124 0.0" />
+        <site name="lidar_343" pos="0.0383 -0.0117 0.02" zaxis="0.0383 -0.0117 0.0" />
+        <site name="lidar_344" pos="0.0385 -0.0110 0.02" zaxis="0.0385 -0.0110 0.0" />
+        <site name="lidar_345" pos="0.0386 -0.0104 0.02" zaxis="0.0386 -0.0104 0.0" />
+        <site name="lidar_346" pos="0.0388 -0.0097 0.02" zaxis="0.0388 -0.0097 0.0" />
+        <site name="lidar_347" pos="0.0390 -0.0090 0.02" zaxis="0.0390 -0.0090 0.0" />
+        <site name="lidar_348" pos="0.0391 -0.0083 0.02" zaxis="0.0391 -0.0083 0.0" />
+        <site name="lidar_349" pos="0.0393 -0.0076 0.02" zaxis="0.0393 -0.0076 0.0" />
+        <site name="lidar_350" pos="0.0394 -0.0069 0.02" zaxis="0.0394 -0.0069 0.0" />
+        <site name="lidar_351" pos="0.0395 -0.0063 0.02" zaxis="0.0395 -0.0063 0.0" />
+        <site name="lidar_352" pos="0.0396 -0.0056 0.02" zaxis="0.0396 -0.0056 0.0" />
+        <site name="lidar_353" pos="0.0397 -0.0049 0.02" zaxis="0.0397 -0.0049 0.0" />
+        <site name="lidar_354" pos="0.0398 -0.0042 0.02" zaxis="0.0398 -0.0042 0.0" />
+        <site name="lidar_355" pos="0.0398 -0.0035 0.02" zaxis="0.0398 -0.0035 0.0" />
+        <site name="lidar_356" pos="0.0399 -0.0028 0.02" zaxis="0.0399 -0.0028 0.0" />
+        <site name="lidar_357" pos="0.0399 -0.0021 0.02" zaxis="0.0399 -0.0021 0.0" />
+        <site name="lidar_358" pos="0.0400 -0.0014 0.02" zaxis="0.0400 -0.0014 0.0" />
+        <site name="lidar_359" pos="0.0400 -0.0007 0.02" zaxis="0.0400 -0.0007 0.0" />
+      </body>
+
+      <body name="camera_body" pos="0.25 0 0.05" quat="1 0 0 0">
+        <geom type="box" size="0.01 0.04 0.02" rgba="0.2 0.2 0.2 1" />
+        <camera name="front_vision_camera" fovy="60" quat="0.5 0.5 0.5 0.5" />
+      </body>
+      <!-- SENSORS END -->
+
+      <!-- Legs included from Lite3.xml content -->
+      <body name="FL_HIP" pos="0.1745 0.062 0">
+        <joint name="FL_HipX_joint" type="hinge" class="motor" range="-0.523 0.523" axis="-1 0 0" />
+        <inertial pos="-0.00601 -0.0066532 0.00034295" mass="0.550" diaginertia="0.0003949 0.0004028 0.0004472" />
+        <geom name="FL_HIP_collision" type="mesh" mesh="fl_hip.STL" class="collision" />
+        <geom name="FL_HIP_visual" type="mesh" mesh="fl_hip.STL" class="visual" />
+        <body name="FL_THIGH" pos="0 0.09735 0">
+          <joint name="FL_HipY_joint" type="hinge" class="motor" range="-2.67 0.314" axis="0 -1 0" />
+          <inertial pos="-0.0039245 -0.014632 -0.025146" mass="0.86" diaginertia="0.005736 0.00496 0.001436" />
+          <geom name="FL_THIGH_collision" type="mesh" mesh="fl_thigh.STL" class="collision" />
+          <geom name="FL_THIGH_visual" type="mesh" mesh="fl_thigh.STL" class="visual" />
+          <body name="FL_SHANK" pos="0 0 -0.20">
+            <joint name="FL_Knee_joint" type="hinge" class="motor" range="0.524 2.792" axis="0 -1 0" />
+            <inertial pos="0.0064794 -1.4535E-06 -0.12157" mass="0.153" diaginertia="0.00089039 0.00090672 3.1266e-05" />
+            <geom name="FL_SHANK_collision" type="mesh" mesh="fl_shank_collision.STL" class="collision" />
+            <geom name="FL_SHANK_visual" type="mesh" mesh="fl_shank_collision.STL" class="visual" />
+            <body name="FL_FOOT" pos="0 0 -0.21012">
+              <geom name="FL_FOOT_collision" type="sphere" size="0.022" class="collision" />
+            </body>
+          </body>
+        </body>
+      </body>
+      <body name="FR_HIP" pos="0.1745 -0.062 0">
+        <joint name="FR_HipX_joint" type="hinge" class="motor" range="-0.523 0.523" axis="-1 0 0" />
+        <inertial pos="-0.010579 0.011358 0.00048546" mass="0.550" diaginertia="0.0004472 0.0004028 0.0003949" />
+        <geom name="FR_HIP_collision" type="mesh" mesh="fr_hip.STL" class="collision" />
+        <geom name="FR_HIP_visual" type="mesh" mesh="fr_hip.STL" class="visual" />
+        <body name="FR_THIGH" pos="0 -0.09735 0">
+          <joint name="FR_HipY_joint" type="hinge" class="motor" range="-2.67 0.314" axis="0 -1 0" />
+          <inertial pos="-0.0039245 0.014632 -0.025146" mass="0.86" diaginertia="0.005736 0.00496 0.001436" />
+          <geom name="FR_THIGH_collision" type="mesh" mesh="fr_thigh.STL" class="collision" />
+          <geom name="FR_THIGH_visual" type="mesh" mesh="fr_thigh.STL" class="visual" />
+          <body name="FR_SHANK" pos="0 0 -0.20">
+            <joint name="FR_Knee_joint" type="hinge" class="motor" range="0.524 2.792" axis="0 -1 0" />
+            <inertial pos="0.0064794 -1.4552E-06 -0.12157" mass="0.153" diaginertia="0.00089039 0.00090672 3.1266e-05" />
+            <geom name="FR_SHANK_collision" type="mesh" mesh="fr_shank_collision.STL" class="collision" />
+            <geom name="FR_SHANK_visual" type="mesh" mesh="fr_shank_collision.STL" class="visual" />
+            <body name="FR_FOOT" pos="0 0 -0.21012">
+              <geom name="FR_FOOT_collision" type="sphere" size="0.022" class="collision" />
+            </body>
+          </body>
+        </body>
+      </body>
+      <body name="HL_HIP" pos="-0.1745 0.062 0">
+        <joint name="HL_HipX_joint" type="hinge" class="motor" range="-0.523 0.523" axis="-1 0 0" />
+        <inertial pos="0.010905 -0.012636 0.001051" mass="0.550" diaginertia="0.0003949 0.0004028 0.0004472" />
+        <geom name="HL_HIP_collision" type="mesh" mesh="hl_hip.STL" class="collision" />
+        <geom name="HL_HIP_visual" type="mesh" mesh="hl_hip.STL" class="visual" />
+        <body name="HL_THIGH" pos="0 0.09735 0">
+          <joint name="HL_HipY_joint" type="hinge" class="motor" range="-2.67 0.314" axis="0 -1 0" />
+          <inertial pos="-0.0039245 -0.014632 -0.025146" mass="0.86" diaginertia="0.005736 0.00496 0.001436" />
+          <geom name="HL_THIGH_collision" type="mesh" mesh="hl_thigh.STL" class="collision" />
+          <geom name="HL_THIGH_visual" type="mesh" mesh="hl_thigh.STL" class="visual" />
+          <body name="HL_SHANK" pos="0 0 -0.20">
+            <joint name="HL_Knee_joint" type="hinge" class="motor" range="0.524 2.792" axis="0 -1 0" />
+            <inertial pos="0.0064794 -1.4558E-06 -0.12157" mass="0.153" diaginertia="0.00089039 0.00090672 3.1266e-05" />
+            <geom name="HL_SHANK_collision" type="mesh" mesh="hl_shank_collision.STL" class="collision" />
+            <geom name="HL_SHANK_visual" type="mesh" mesh="hl_shank_collision.STL" class="visual" />
+            <body name="HL_FOOT" pos="0 0 -0.21012">
+              <geom name="HL_FOOT_collision" type="sphere" size="0.022" class="collision" />
+            </body>
+          </body>
+        </body>
+      </body>
+      <body name="HR_HIP" pos="-0.1745 -0.062 0">
+        <joint name="HR_HipX_joint" type="hinge" class="motor" range="-0.523 0.523" axis="-1 0 0" />
+        <inertial pos="0.010354 0.011423 0.00049498" mass="0.550" diaginertia="0.0003949 0.0004028 0.0004472" />
+        <geom name="HR_HIP_collision" type="mesh" mesh="hr_hip.STL" class="collision" />
+        <geom name="HR_HIP_visual" type="mesh" mesh="hr_hip.STL" class="visual" />
+        <body name="HR_THIGH" pos="0 -0.09735 0">
+          <joint name="HR_HipY_joint" type="hinge" class="motor" range="-2.67 0.314" axis="0 -1 0" />
+          <inertial pos="-0.0039245 0.014632 -0.025146" mass="0.86" diaginertia="0.005736 0.00496 0.001436" />
+          <geom name="HR_THIGH_collision" type="mesh" mesh="hr_thigh.STL" class="collision" />
+          <geom name="HR_THIGH_visual" type="mesh" mesh="hr_thigh.STL" class="visual" />
+          <body name="HR_SHANK" pos="0 0 -0.20">
+            <joint name="HR_Knee_joint" type="hinge" class="motor" range="0.524 2.792" axis="0 -1 0" />
+            <inertial pos="0.0064794 -1.4529E-06 -0.12157" mass="0.153" diaginertia="0.00089039 0.00090672 3.1266e-05" />
+            <geom name="HR_SHANK_collision" type="mesh" mesh="hr_shank_collision.STL" class="collision" />
+            <geom name="HR_SHANK_visual" type="mesh" mesh="hr_shank_collision.STL" class="visual" />
+            <body name="HR_FOOT" pos="0 0 -0.21012">
+              <geom name="HR_FOOT_collision" type="sphere" size="0.022" class="collision" />
+            </body>
+          </body>
+        </body>
+      </body>
+      <site name="TORSO_site" pos="0 0 0" />
+    </body>
+  </worldbody>
+
+  <actuator>
+    <motor name="FL_HipX_joint_ctrl" joint="FL_HipX_joint" class="motor" gear="1" ctrlrange="-30 30"/>
+    <motor name="FL_HipY_joint_ctrl" joint="FL_HipY_joint" class="motor" gear="1" ctrlrange="-30 30"/>
+    <motor name="FL_Knee_joint_ctrl" joint="FL_Knee_joint" class="motor" gear="1" ctrlrange="-30 30"/>
+    <motor name="FR_HipX_joint_ctrl" joint="FR_HipX_joint" class="motor" gear="1" ctrlrange="-30 30"/>
+    <motor name="FR_HipY_joint_ctrl" joint="FR_HipY_joint" class="motor" gear="1" ctrlrange="-30 30"/>
+    <motor name="FR_Knee_joint_ctrl" joint="FR_Knee_joint" class="motor" gear="1" ctrlrange="-30 30"/>
+    <motor name="HL_HipX_joint_ctrl" joint="HL_HipX_joint" class="motor" gear="1" ctrlrange="-30 30"/>
+    <motor name="HL_HipY_joint_ctrl" joint="HL_HipY_joint" class="motor" gear="1" ctrlrange="-30 30"/>
+    <motor name="HL_Knee_joint_ctrl" joint="HL_Knee_joint" class="motor" gear="1" ctrlrange="-30 30"/>
+    <motor name="HR_HipX_joint_ctrl" joint="HR_HipX_joint" class="motor" gear="1" ctrlrange="-30 30"/>
+    <motor name="HR_HipY_joint_ctrl" joint="HR_HipY_joint" class="motor" gear="1" ctrlrange="-30 30"/>
+    <motor name="HR_Knee_joint_ctrl" joint="HR_Knee_joint" class="motor" gear="1" ctrlrange="-30 30"/>
+  </actuator>
+
+  <contact>
+    <exclude body1="TORSO" body2="FL_HIP" />
+    <exclude body1="FL_HIP" body2="FL_THIGH" />
+    <exclude body1="FL_THIGH" body2="FL_SHANK" />
+    <exclude body1="FL_SHANK" body2="FL_FOOT" />
+    <exclude body1="TORSO" body2="FR_HIP" />
+    <exclude body1="FR_HIP" body2="FR_THIGH" />
+    <exclude body1="FR_THIGH" body2="FR_SHANK" />
+    <exclude body1="FR_SHANK" body2="FR_FOOT" />
+    <exclude body1="TORSO" body2="HL_HIP" />
+    <exclude body1="HL_HIP" body2="HL_THIGH" />
+    <exclude body1="HL_THIGH" body2="HL_SHANK" />
+    <exclude body1="HL_SHANK" body2="HL_FOOT" />
+    <exclude body1="TORSO" body2="HR_HIP" />
+    <exclude body1="HR_HIP" body2="HR_THIGH" />
+    <exclude body1="HR_THIGH" body2="HR_SHANK" />
+    <exclude body1="HR_SHANK" body2="HR_FOOT" />
+  </contact>
+
+  <sensor>
+    <rangefinder name="lidar_0" site="lidar_0" />
+    <rangefinder name="lidar_1" site="lidar_1" />
+    <rangefinder name="lidar_2" site="lidar_2" />
+    <rangefinder name="lidar_3" site="lidar_3" />
+    <rangefinder name="lidar_4" site="lidar_4" />
+    <rangefinder name="lidar_5" site="lidar_5" />
+    <rangefinder name="lidar_6" site="lidar_6" />
+    <rangefinder name="lidar_7" site="lidar_7" />
+    <rangefinder name="lidar_8" site="lidar_8" />
+    <rangefinder name="lidar_9" site="lidar_9" />
+    <rangefinder name="lidar_10" site="lidar_10" />
+    <rangefinder name="lidar_11" site="lidar_11" />
+    <rangefinder name="lidar_12" site="lidar_12" />
+    <rangefinder name="lidar_13" site="lidar_13" />
+    <rangefinder name="lidar_14" site="lidar_14" />
+    <rangefinder name="lidar_15" site="lidar_15" />
+    <rangefinder name="lidar_16" site="lidar_16" />
+    <rangefinder name="lidar_17" site="lidar_17" />
+    <rangefinder name="lidar_18" site="lidar_18" />
+    <rangefinder name="lidar_19" site="lidar_19" />
+    <rangefinder name="lidar_20" site="lidar_20" />
+    <rangefinder name="lidar_21" site="lidar_21" />
+    <rangefinder name="lidar_22" site="lidar_22" />
+    <rangefinder name="lidar_23" site="lidar_23" />
+    <rangefinder name="lidar_24" site="lidar_24" />
+    <rangefinder name="lidar_25" site="lidar_25" />
+    <rangefinder name="lidar_26" site="lidar_26" />
+    <rangefinder name="lidar_27" site="lidar_27" />
+    <rangefinder name="lidar_28" site="lidar_28" />
+    <rangefinder name="lidar_29" site="lidar_29" />
+    <rangefinder name="lidar_30" site="lidar_30" />
+    <rangefinder name="lidar_31" site="lidar_31" />
+    <rangefinder name="lidar_32" site="lidar_32" />
+    <rangefinder name="lidar_33" site="lidar_33" />
+    <rangefinder name="lidar_34" site="lidar_34" />
+    <rangefinder name="lidar_35" site="lidar_35" />
+    <rangefinder name="lidar_36" site="lidar_36" />
+    <rangefinder name="lidar_37" site="lidar_37" />
+    <rangefinder name="lidar_38" site="lidar_38" />
+    <rangefinder name="lidar_39" site="lidar_39" />
+    <rangefinder name="lidar_40" site="lidar_40" />
+    <rangefinder name="lidar_41" site="lidar_41" />
+    <rangefinder name="lidar_42" site="lidar_42" />
+    <rangefinder name="lidar_43" site="lidar_43" />
+    <rangefinder name="lidar_44" site="lidar_44" />
+    <rangefinder name="lidar_45" site="lidar_45" />
+    <rangefinder name="lidar_46" site="lidar_46" />
+    <rangefinder name="lidar_47" site="lidar_47" />
+    <rangefinder name="lidar_48" site="lidar_48" />
+    <rangefinder name="lidar_49" site="lidar_49" />
+    <rangefinder name="lidar_50" site="lidar_50" />
+    <rangefinder name="lidar_51" site="lidar_51" />
+    <rangefinder name="lidar_52" site="lidar_52" />
+    <rangefinder name="lidar_53" site="lidar_53" />
+    <rangefinder name="lidar_54" site="lidar_54" />
+    <rangefinder name="lidar_55" site="lidar_55" />
+    <rangefinder name="lidar_56" site="lidar_56" />
+    <rangefinder name="lidar_57" site="lidar_57" />
+    <rangefinder name="lidar_58" site="lidar_58" />
+    <rangefinder name="lidar_59" site="lidar_59" />
+    <rangefinder name="lidar_60" site="lidar_60" />
+    <rangefinder name="lidar_61" site="lidar_61" />
+    <rangefinder name="lidar_62" site="lidar_62" />
+    <rangefinder name="lidar_63" site="lidar_63" />
+    <rangefinder name="lidar_64" site="lidar_64" />
+    <rangefinder name="lidar_65" site="lidar_65" />
+    <rangefinder name="lidar_66" site="lidar_66" />
+    <rangefinder name="lidar_67" site="lidar_67" />
+    <rangefinder name="lidar_68" site="lidar_68" />
+    <rangefinder name="lidar_69" site="lidar_69" />
+    <rangefinder name="lidar_70" site="lidar_70" />
+    <rangefinder name="lidar_71" site="lidar_71" />
+    <rangefinder name="lidar_72" site="lidar_72" />
+    <rangefinder name="lidar_73" site="lidar_73" />
+    <rangefinder name="lidar_74" site="lidar_74" />
+    <rangefinder name="lidar_75" site="lidar_75" />
+    <rangefinder name="lidar_76" site="lidar_76" />
+    <rangefinder name="lidar_77" site="lidar_77" />
+    <rangefinder name="lidar_78" site="lidar_78" />
+    <rangefinder name="lidar_79" site="lidar_79" />
+    <rangefinder name="lidar_80" site="lidar_80" />
+    <rangefinder name="lidar_81" site="lidar_81" />
+    <rangefinder name="lidar_82" site="lidar_82" />
+    <rangefinder name="lidar_83" site="lidar_83" />
+    <rangefinder name="lidar_84" site="lidar_84" />
+    <rangefinder name="lidar_85" site="lidar_85" />
+    <rangefinder name="lidar_86" site="lidar_86" />
+    <rangefinder name="lidar_87" site="lidar_87" />
+    <rangefinder name="lidar_88" site="lidar_88" />
+    <rangefinder name="lidar_89" site="lidar_89" />
+    <rangefinder name="lidar_90" site="lidar_90" />
+    <rangefinder name="lidar_91" site="lidar_91" />
+    <rangefinder name="lidar_92" site="lidar_92" />
+    <rangefinder name="lidar_93" site="lidar_93" />
+    <rangefinder name="lidar_94" site="lidar_94" />
+    <rangefinder name="lidar_95" site="lidar_95" />
+    <rangefinder name="lidar_96" site="lidar_96" />
+    <rangefinder name="lidar_97" site="lidar_97" />
+    <rangefinder name="lidar_98" site="lidar_98" />
+    <rangefinder name="lidar_99" site="lidar_99" />
+    <rangefinder name="lidar_100" site="lidar_100" />
+    <rangefinder name="lidar_101" site="lidar_101" />
+    <rangefinder name="lidar_102" site="lidar_102" />
+    <rangefinder name="lidar_103" site="lidar_103" />
+    <rangefinder name="lidar_104" site="lidar_104" />
+    <rangefinder name="lidar_105" site="lidar_105" />
+    <rangefinder name="lidar_106" site="lidar_106" />
+    <rangefinder name="lidar_107" site="lidar_107" />
+    <rangefinder name="lidar_108" site="lidar_108" />
+    <rangefinder name="lidar_109" site="lidar_109" />
+    <rangefinder name="lidar_110" site="lidar_110" />
+    <rangefinder name="lidar_111" site="lidar_111" />
+    <rangefinder name="lidar_112" site="lidar_112" />
+    <rangefinder name="lidar_113" site="lidar_113" />
+    <rangefinder name="lidar_114" site="lidar_114" />
+    <rangefinder name="lidar_115" site="lidar_115" />
+    <rangefinder name="lidar_116" site="lidar_116" />
+    <rangefinder name="lidar_117" site="lidar_117" />
+    <rangefinder name="lidar_118" site="lidar_118" />
+    <rangefinder name="lidar_119" site="lidar_119" />
+    <rangefinder name="lidar_120" site="lidar_120" />
+    <rangefinder name="lidar_121" site="lidar_121" />
+    <rangefinder name="lidar_122" site="lidar_122" />
+    <rangefinder name="lidar_123" site="lidar_123" />
+    <rangefinder name="lidar_124" site="lidar_124" />
+    <rangefinder name="lidar_125" site="lidar_125" />
+    <rangefinder name="lidar_126" site="lidar_126" />
+    <rangefinder name="lidar_127" site="lidar_127" />
+    <rangefinder name="lidar_128" site="lidar_128" />
+    <rangefinder name="lidar_129" site="lidar_129" />
+    <rangefinder name="lidar_130" site="lidar_130" />
+    <rangefinder name="lidar_131" site="lidar_131" />
+    <rangefinder name="lidar_132" site="lidar_132" />
+    <rangefinder name="lidar_133" site="lidar_133" />
+    <rangefinder name="lidar_134" site="lidar_134" />
+    <rangefinder name="lidar_135" site="lidar_135" />
+    <rangefinder name="lidar_136" site="lidar_136" />
+    <rangefinder name="lidar_137" site="lidar_137" />
+    <rangefinder name="lidar_138" site="lidar_138" />
+    <rangefinder name="lidar_139" site="lidar_139" />
+    <rangefinder name="lidar_140" site="lidar_140" />
+    <rangefinder name="lidar_141" site="lidar_141" />
+    <rangefinder name="lidar_142" site="lidar_142" />
+    <rangefinder name="lidar_143" site="lidar_143" />
+    <rangefinder name="lidar_144" site="lidar_144" />
+    <rangefinder name="lidar_145" site="lidar_145" />
+    <rangefinder name="lidar_146" site="lidar_146" />
+    <rangefinder name="lidar_147" site="lidar_147" />
+    <rangefinder name="lidar_148" site="lidar_148" />
+    <rangefinder name="lidar_149" site="lidar_149" />
+    <rangefinder name="lidar_150" site="lidar_150" />
+    <rangefinder name="lidar_151" site="lidar_151" />
+    <rangefinder name="lidar_152" site="lidar_152" />
+    <rangefinder name="lidar_153" site="lidar_153" />
+    <rangefinder name="lidar_154" site="lidar_154" />
+    <rangefinder name="lidar_155" site="lidar_155" />
+    <rangefinder name="lidar_156" site="lidar_156" />
+    <rangefinder name="lidar_157" site="lidar_157" />
+    <rangefinder name="lidar_158" site="lidar_158" />
+    <rangefinder name="lidar_159" site="lidar_159" />
+    <rangefinder name="lidar_160" site="lidar_160" />
+    <rangefinder name="lidar_161" site="lidar_161" />
+    <rangefinder name="lidar_162" site="lidar_162" />
+    <rangefinder name="lidar_163" site="lidar_163" />
+    <rangefinder name="lidar_164" site="lidar_164" />
+    <rangefinder name="lidar_165" site="lidar_165" />
+    <rangefinder name="lidar_166" site="lidar_166" />
+    <rangefinder name="lidar_167" site="lidar_167" />
+    <rangefinder name="lidar_168" site="lidar_168" />
+    <rangefinder name="lidar_169" site="lidar_169" />
+    <rangefinder name="lidar_170" site="lidar_170" />
+    <rangefinder name="lidar_171" site="lidar_171" />
+    <rangefinder name="lidar_172" site="lidar_172" />
+    <rangefinder name="lidar_173" site="lidar_173" />
+    <rangefinder name="lidar_174" site="lidar_174" />
+    <rangefinder name="lidar_175" site="lidar_175" />
+    <rangefinder name="lidar_176" site="lidar_176" />
+    <rangefinder name="lidar_177" site="lidar_177" />
+    <rangefinder name="lidar_178" site="lidar_178" />
+    <rangefinder name="lidar_179" site="lidar_179" />
+    <rangefinder name="lidar_180" site="lidar_180" />
+    <rangefinder name="lidar_181" site="lidar_181" />
+    <rangefinder name="lidar_182" site="lidar_182" />
+    <rangefinder name="lidar_183" site="lidar_183" />
+    <rangefinder name="lidar_184" site="lidar_184" />
+    <rangefinder name="lidar_185" site="lidar_185" />
+    <rangefinder name="lidar_186" site="lidar_186" />
+    <rangefinder name="lidar_187" site="lidar_187" />
+    <rangefinder name="lidar_188" site="lidar_188" />
+    <rangefinder name="lidar_189" site="lidar_189" />
+    <rangefinder name="lidar_190" site="lidar_190" />
+    <rangefinder name="lidar_191" site="lidar_191" />
+    <rangefinder name="lidar_192" site="lidar_192" />
+    <rangefinder name="lidar_193" site="lidar_193" />
+    <rangefinder name="lidar_194" site="lidar_194" />
+    <rangefinder name="lidar_195" site="lidar_195" />
+    <rangefinder name="lidar_196" site="lidar_196" />
+    <rangefinder name="lidar_197" site="lidar_197" />
+    <rangefinder name="lidar_198" site="lidar_198" />
+    <rangefinder name="lidar_199" site="lidar_199" />
+    <rangefinder name="lidar_200" site="lidar_200" />
+    <rangefinder name="lidar_201" site="lidar_201" />
+    <rangefinder name="lidar_202" site="lidar_202" />
+    <rangefinder name="lidar_203" site="lidar_203" />
+    <rangefinder name="lidar_204" site="lidar_204" />
+    <rangefinder name="lidar_205" site="lidar_205" />
+    <rangefinder name="lidar_206" site="lidar_206" />
+    <rangefinder name="lidar_207" site="lidar_207" />
+    <rangefinder name="lidar_208" site="lidar_208" />
+    <rangefinder name="lidar_209" site="lidar_209" />
+    <rangefinder name="lidar_210" site="lidar_210" />
+    <rangefinder name="lidar_211" site="lidar_211" />
+    <rangefinder name="lidar_212" site="lidar_212" />
+    <rangefinder name="lidar_213" site="lidar_213" />
+    <rangefinder name="lidar_214" site="lidar_214" />
+    <rangefinder name="lidar_215" site="lidar_215" />
+    <rangefinder name="lidar_216" site="lidar_216" />
+    <rangefinder name="lidar_217" site="lidar_217" />
+    <rangefinder name="lidar_218" site="lidar_218" />
+    <rangefinder name="lidar_219" site="lidar_219" />
+    <rangefinder name="lidar_220" site="lidar_220" />
+    <rangefinder name="lidar_221" site="lidar_221" />
+    <rangefinder name="lidar_222" site="lidar_222" />
+    <rangefinder name="lidar_223" site="lidar_223" />
+    <rangefinder name="lidar_224" site="lidar_224" />
+    <rangefinder name="lidar_225" site="lidar_225" />
+    <rangefinder name="lidar_226" site="lidar_226" />
+    <rangefinder name="lidar_227" site="lidar_227" />
+    <rangefinder name="lidar_228" site="lidar_228" />
+    <rangefinder name="lidar_229" site="lidar_229" />
+    <rangefinder name="lidar_230" site="lidar_230" />
+    <rangefinder name="lidar_231" site="lidar_231" />
+    <rangefinder name="lidar_232" site="lidar_232" />
+    <rangefinder name="lidar_233" site="lidar_233" />
+    <rangefinder name="lidar_234" site="lidar_234" />
+    <rangefinder name="lidar_235" site="lidar_235" />
+    <rangefinder name="lidar_236" site="lidar_236" />
+    <rangefinder name="lidar_237" site="lidar_237" />
+    <rangefinder name="lidar_238" site="lidar_238" />
+    <rangefinder name="lidar_239" site="lidar_239" />
+    <rangefinder name="lidar_240" site="lidar_240" />
+    <rangefinder name="lidar_241" site="lidar_241" />
+    <rangefinder name="lidar_242" site="lidar_242" />
+    <rangefinder name="lidar_243" site="lidar_243" />
+    <rangefinder name="lidar_244" site="lidar_244" />
+    <rangefinder name="lidar_245" site="lidar_245" />
+    <rangefinder name="lidar_246" site="lidar_246" />
+    <rangefinder name="lidar_247" site="lidar_247" />
+    <rangefinder name="lidar_248" site="lidar_248" />
+    <rangefinder name="lidar_249" site="lidar_249" />
+    <rangefinder name="lidar_250" site="lidar_250" />
+    <rangefinder name="lidar_251" site="lidar_251" />
+    <rangefinder name="lidar_252" site="lidar_252" />
+    <rangefinder name="lidar_253" site="lidar_253" />
+    <rangefinder name="lidar_254" site="lidar_254" />
+    <rangefinder name="lidar_255" site="lidar_255" />
+    <rangefinder name="lidar_256" site="lidar_256" />
+    <rangefinder name="lidar_257" site="lidar_257" />
+    <rangefinder name="lidar_258" site="lidar_258" />
+    <rangefinder name="lidar_259" site="lidar_259" />
+    <rangefinder name="lidar_260" site="lidar_260" />
+    <rangefinder name="lidar_261" site="lidar_261" />
+    <rangefinder name="lidar_262" site="lidar_262" />
+    <rangefinder name="lidar_263" site="lidar_263" />
+    <rangefinder name="lidar_264" site="lidar_264" />
+    <rangefinder name="lidar_265" site="lidar_265" />
+    <rangefinder name="lidar_266" site="lidar_266" />
+    <rangefinder name="lidar_267" site="lidar_267" />
+    <rangefinder name="lidar_268" site="lidar_268" />
+    <rangefinder name="lidar_269" site="lidar_269" />
+    <rangefinder name="lidar_270" site="lidar_270" />
+    <rangefinder name="lidar_271" site="lidar_271" />
+    <rangefinder name="lidar_272" site="lidar_272" />
+    <rangefinder name="lidar_273" site="lidar_273" />
+    <rangefinder name="lidar_274" site="lidar_274" />
+    <rangefinder name="lidar_275" site="lidar_275" />
+    <rangefinder name="lidar_276" site="lidar_276" />
+    <rangefinder name="lidar_277" site="lidar_277" />
+    <rangefinder name="lidar_278" site="lidar_278" />
+    <rangefinder name="lidar_279" site="lidar_279" />
+    <rangefinder name="lidar_280" site="lidar_280" />
+    <rangefinder name="lidar_281" site="lidar_281" />
+    <rangefinder name="lidar_282" site="lidar_282" />
+    <rangefinder name="lidar_283" site="lidar_283" />
+    <rangefinder name="lidar_284" site="lidar_284" />
+    <rangefinder name="lidar_285" site="lidar_285" />
+    <rangefinder name="lidar_286" site="lidar_286" />
+    <rangefinder name="lidar_287" site="lidar_287" />
+    <rangefinder name="lidar_288" site="lidar_288" />
+    <rangefinder name="lidar_289" site="lidar_289" />
+    <rangefinder name="lidar_290" site="lidar_290" />
+    <rangefinder name="lidar_291" site="lidar_291" />
+    <rangefinder name="lidar_292" site="lidar_292" />
+    <rangefinder name="lidar_293" site="lidar_293" />
+    <rangefinder name="lidar_294" site="lidar_294" />
+    <rangefinder name="lidar_295" site="lidar_295" />
+    <rangefinder name="lidar_296" site="lidar_296" />
+    <rangefinder name="lidar_297" site="lidar_297" />
+    <rangefinder name="lidar_298" site="lidar_298" />
+    <rangefinder name="lidar_299" site="lidar_299" />
+    <rangefinder name="lidar_300" site="lidar_300" />
+    <rangefinder name="lidar_301" site="lidar_301" />
+    <rangefinder name="lidar_302" site="lidar_302" />
+    <rangefinder name="lidar_303" site="lidar_303" />
+    <rangefinder name="lidar_304" site="lidar_304" />
+    <rangefinder name="lidar_305" site="lidar_305" />
+    <rangefinder name="lidar_306" site="lidar_306" />
+    <rangefinder name="lidar_307" site="lidar_307" />
+    <rangefinder name="lidar_308" site="lidar_308" />
+    <rangefinder name="lidar_309" site="lidar_309" />
+    <rangefinder name="lidar_310" site="lidar_310" />
+    <rangefinder name="lidar_311" site="lidar_311" />
+    <rangefinder name="lidar_312" site="lidar_312" />
+    <rangefinder name="lidar_313" site="lidar_313" />
+    <rangefinder name="lidar_314" site="lidar_314" />
+    <rangefinder name="lidar_315" site="lidar_315" />
+    <rangefinder name="lidar_316" site="lidar_316" />
+    <rangefinder name="lidar_317" site="lidar_317" />
+    <rangefinder name="lidar_318" site="lidar_318" />
+    <rangefinder name="lidar_319" site="lidar_319" />
+    <rangefinder name="lidar_320" site="lidar_320" />
+    <rangefinder name="lidar_321" site="lidar_321" />
+    <rangefinder name="lidar_322" site="lidar_322" />
+    <rangefinder name="lidar_323" site="lidar_323" />
+    <rangefinder name="lidar_324" site="lidar_324" />
+    <rangefinder name="lidar_325" site="lidar_325" />
+    <rangefinder name="lidar_326" site="lidar_326" />
+    <rangefinder name="lidar_327" site="lidar_327" />
+    <rangefinder name="lidar_328" site="lidar_328" />
+    <rangefinder name="lidar_329" site="lidar_329" />
+    <rangefinder name="lidar_330" site="lidar_330" />
+    <rangefinder name="lidar_331" site="lidar_331" />
+    <rangefinder name="lidar_332" site="lidar_332" />
+    <rangefinder name="lidar_333" site="lidar_333" />
+    <rangefinder name="lidar_334" site="lidar_334" />
+    <rangefinder name="lidar_335" site="lidar_335" />
+    <rangefinder name="lidar_336" site="lidar_336" />
+    <rangefinder name="lidar_337" site="lidar_337" />
+    <rangefinder name="lidar_338" site="lidar_338" />
+    <rangefinder name="lidar_339" site="lidar_339" />
+    <rangefinder name="lidar_340" site="lidar_340" />
+    <rangefinder name="lidar_341" site="lidar_341" />
+    <rangefinder name="lidar_342" site="lidar_342" />
+    <rangefinder name="lidar_343" site="lidar_343" />
+    <rangefinder name="lidar_344" site="lidar_344" />
+    <rangefinder name="lidar_345" site="lidar_345" />
+    <rangefinder name="lidar_346" site="lidar_346" />
+    <rangefinder name="lidar_347" site="lidar_347" />
+    <rangefinder name="lidar_348" site="lidar_348" />
+    <rangefinder name="lidar_349" site="lidar_349" />
+    <rangefinder name="lidar_350" site="lidar_350" />
+    <rangefinder name="lidar_351" site="lidar_351" />
+    <rangefinder name="lidar_352" site="lidar_352" />
+    <rangefinder name="lidar_353" site="lidar_353" />
+    <rangefinder name="lidar_354" site="lidar_354" />
+    <rangefinder name="lidar_355" site="lidar_355" />
+    <rangefinder name="lidar_356" site="lidar_356" />
+    <rangefinder name="lidar_357" site="lidar_357" />
+    <rangefinder name="lidar_358" site="lidar_358" />
+    <rangefinder name="lidar_359" site="lidar_359" />
+
+    <!-- lidar sensors added programmatically in bridge but we need sites for them -->
+    <!-- and the standard sensors -->
+    <accelerometer site="imu_site"/>
+    <gyro          site="imu_site"/>
+  </sensor>
+</mujoco>
