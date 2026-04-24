@@ -264,7 +264,7 @@ public:
     }
 
     void HandlerIMU(const drdds::msg::ImuData::SharedPtr msg) {
-        rpy_ = Vec3f(Deg2Rad(msg->data.roll), Deg2Rad(msg->data.pitch), Deg2Rad(msg->data.yaw));
+        rpy_ = Vec3f(msg->data.roll, msg->data.pitch, msg->data.yaw);
         acc_ << msg->data.acc_x, msg->data.acc_y, msg->data.acc_z;
         omega_body_ << msg->data.omega_x, msg->data.omega_y, msg->data.omega_z;
         imu_ts_ = rclcpp::Time(msg->header.stamp).seconds();

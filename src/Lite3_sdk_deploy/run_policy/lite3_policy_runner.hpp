@@ -99,7 +99,7 @@ public:
                                   0.0000, -0.8000, 1.6000,
                                   0.0000, -0.8000, 1.6000;
 
-        SetDecimation(4);
+        SetDecimation(12);
         session_options_.SetIntraOpNumThreads(4);
         session_options_.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
         
@@ -202,7 +202,7 @@ public:
 
         Vec3f base_omgea = ro.base_omega * omega_scale_;
         Vec3f projected_gravity = ro.base_rot_mat.inverse() * gravity_direction;
-        Vec3f command = Vec3f(uc.forward_vel_scale, uc.side_vel_scale, uc.turnning_vel_scale);
+        Vec3f command = Vec3f(uc.forward_vel_scale, uc.side_vel_scale, uc.turnning_vel_scale) * 0.8f;
 
         for (int i = 0; i < action_dim; ++i){
             joint_pos_rl(i) = ro.joint_pos(robot2policy_idx[i]);

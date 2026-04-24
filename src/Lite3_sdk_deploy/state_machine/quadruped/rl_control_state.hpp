@@ -47,7 +47,7 @@ namespace q {
             rbs_.joint_vel = ri_ptr_->GetJointVelocity();
             rbs_.joint_tau = ri_ptr_->GetJointTorque();
 
-            // 储存
+            // 采样
             rbs_.flt_base_acc_mat.row(acc_rot_count) = rbs_.base_acc.transpose();
             acc_rot_count += 1;
             acc_rot_count = acc_rot_count % 20;

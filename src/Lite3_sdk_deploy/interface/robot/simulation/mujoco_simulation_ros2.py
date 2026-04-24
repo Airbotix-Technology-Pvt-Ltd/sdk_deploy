@@ -145,8 +145,8 @@ class MuJoCoSimulationNode(Node):
 
                 self.timestamp = step * DT
 
-                # 采样 & 发送观测 (every 5 steps for 200 Hz)
-                if step % 5 == 0:
+                # 采样 & 发送观测 (every step for 1000 Hz)
+                if step % 1 == 0:
                     self._publish_robot_state(step)
 
                 # 可视化
