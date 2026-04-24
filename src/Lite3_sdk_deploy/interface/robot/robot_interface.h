@@ -164,6 +164,13 @@ public:
 
     virtual void RefreshRobotData(){
     }
+
+    virtual bool IsDataUpdated(int index) {
+        return true;
+    }
+
+    virtual void ClearDataUpdated(int index) {
+    }
 };
 
 

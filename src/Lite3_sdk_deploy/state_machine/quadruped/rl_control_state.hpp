@@ -54,22 +54,14 @@ namespace q {
         }
 
         void PolicyRunner() {
-            int run_cnt_record = -1;
             while (start_flag_) {
-
-                if (state_run_cnt_ % policy_ptr_->decimation_ == 0 && state_run_cnt_ != run_cnt_record) {
-                    timespec start_timestamp, end_timestamp;
-                    clock_gettime(CLOCK_MONOTONIC, &start_timestamp);
-                    auto ra = policy_ptr_->getRobotAction(rbs_, *(uc_ptr_->GetUserCommand()));
+                // Raw Synchronous Trigger: Exactly how rl_deploy handles UDP recv
+                if (ri_ptr_->IsDataUpdated(0)) {
+                    UpdateRobotObservation();
+                    ri_ptr_->ClearDataUpdated(0);
                     
-                    MatXf res = ra.ConvertToMat();
-
-                    ri_ptr_->SetJointCommand(res);
-                    run_cnt_record = state_run_cnt_;
-                    clock_gettime(CLOCK_MONOTONIC, &end_timestamp);
-                    policy_cost_time_ = (end_timestamp.tv_sec - start_timestamp.tv_sec) * 1e3
-                                        + (end_timestamp.tv_nsec - start_timestamp.tv_nsec) / 1e6;
-
+                    auto ra = policy_ptr_->getRobotAction(rbs_, *(uc_ptr_->GetUserCommand()));
+                    ri_ptr_->SetJointCommand(ra.ConvertToMat());
                 }
                 std::this_thread::sleep_for(std::chrono::microseconds(100));
             }
@@ -78,7 +70,7 @@ namespace q {
     public:
         RLControlState(const RobotName &robot_name, const std::string &state_name,
                        std::shared_ptr<ControllerData> data_ptr) : StateBase(robot_name, state_name, data_ptr) {
-            std::memset(&rbs_, 0, sizeof(rbs_));
+            init_rbs_();
             if (robot_name_ == RobotName::Lite3) {
                 namespace fs = std::filesystem;
                 fs::path base = fs::path(__FILE__).parent_path();
@@ -112,7 +104,7 @@ namespace q {
         }
 
         virtual void Run() {
-            UpdateRobotObservation();
+            // UpdateRobotObservation(); // Done in PolicyRunner thread
             state_run_cnt_++;
         }
 

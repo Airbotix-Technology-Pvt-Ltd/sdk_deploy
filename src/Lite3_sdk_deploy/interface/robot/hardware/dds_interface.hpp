@@ -124,12 +124,15 @@ public:
         joint_data_id_.resize(dof_num_);
         battery_data_.resize(BATTERY_DATA_SIZE);
 
-        joint_cmd_pub_ = node_->create_publisher<drdds::msg::JointsDataCmd>("/JOINTS_CMD", 10);
-        joint_data_sub_ = node_->create_subscription<drdds::msg::JointsData>("/JOINTS_DATA", 10,
+        // Standard Best Effort QoS for high-speed simulation
+        auto qos = rclcpp::QoS(rclcpp::KeepLast(5)).best_effort();
+
+        joint_cmd_pub_ = node_->create_publisher<drdds::msg::JointsDataCmd>("/JOINTS_CMD", qos);
+        joint_data_sub_ = node_->create_subscription<drdds::msg::JointsData>("/JOINTS_DATA", qos,
                                     std::bind(&DdsInterface::Handler, this,std::placeholders::_1));
-        imu_data_sub_ = node_->create_subscription<drdds::msg::ImuData>("/IMU_DATA", 10,
+        imu_data_sub_ = node_->create_subscription<drdds::msg::ImuData>("/IMU_DATA", qos,
                                     std::bind(&DdsInterface::HandlerIMU, this, std::placeholders::_1));
-        health_data_sub_ = node_->create_subscription<drdds::msg::BatteryData>("/BATTERY_DATA", 10,
+        health_data_sub_ = node_->create_subscription<drdds::msg::BatteryData>("/BATTERY_DATA", qos,
                                     std::bind(&DdsInterface::HandlerHealth, this, std::placeholders::_1));
         
         sleep(1);
@@ -249,6 +252,16 @@ public:
     virtual void RefreshRobotData() {
     }
 
+    virtual bool IsDataUpdated(int index) override {
+        if (index < 0 || index >= dof_num_) return false;
+        return data_updated_[index];
+    }
+
+    virtual void ClearDataUpdated(int index) override {
+        if (index < 0 || index >= dof_num_) return;
+        data_updated_[index] = false;
+    }
+
     virtual void Handler(const drdds::msg::JointsData::SharedPtr msg) {
         ++run_cnt_;
         for (int i = 0; i < dof_num_; ++i) {
@@ -259,6 +272,7 @@ public:
             driver_temperture_(i) = float(msg->data.joints_data[i].driver_temp);
             driver_status_[i] = msg->data.joints_data[i].status_word;
             joint_data_id_[i] = uint16_t(run_cnt_);
+            data_updated_[i] = true;
         }
         ri_ts_ = rclcpp::Time(msg->header.stamp).seconds();
     }

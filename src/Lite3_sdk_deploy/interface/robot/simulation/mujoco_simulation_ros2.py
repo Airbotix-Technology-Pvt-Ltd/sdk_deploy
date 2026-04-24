@@ -85,16 +85,23 @@ class MuJoCoSimulationNode(Node):
 
         self.get_logger().info(f"[INFO] MuJoCo model loaded, dof = {self.dof_num}")
 
+        # Fast QoS Profile (Matching researchers baseline)
+        qos_profile = rclpy.qos.QoSProfile(
+            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+            history=rclpy.qos.HistoryPolicy.KEEP_LAST,
+            depth=5
+        )
+
         # ROS Publishers
-        self.imu_pub = self.create_publisher(ImuData, '/IMU_DATA', 200)
-        self.joints_pub = self.create_publisher(JointsData, '/JOINTS_DATA', 200)
+        self.imu_pub = self.create_publisher(ImuData, '/IMU_DATA', qos_profile)
+        self.joints_pub = self.create_publisher(JointsData, '/JOINTS_DATA', qos_profile)
 
         # ROS Subscriber
         self.cmd_sub = self.create_subscription(
             JointsDataCmd,
             '/JOINTS_CMD',
             self._cmd_callback,
-            50
+            qos_profile
         )
 
         # 可视化

@@ -66,6 +66,7 @@ public:
             driver_temperture_(i) = float(msg->data.joints_data[i].driver_temp);
             driver_status_[i] = msg->data.joints_data[i].status_word;
             joint_data_id_[i] = uint16_t(run_cnt_);
+            data_updated_[i] = true;
         }
         ri_ts_ = rclcpp::Time(msg->header.stamp).seconds();
     }
