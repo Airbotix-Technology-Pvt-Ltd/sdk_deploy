@@ -206,9 +206,9 @@ class MuJoCoLidarSimulationNode(Node):
         if cam_id != -1:
             self.renderer.update_scene(self.data, camera='front_vision_camera')
             self.renderer.disable_depth_rendering()
-            rgb = np.flipud(self.renderer.render())
+            rgb = self.renderer.render()
             self.renderer.enable_depth_rendering()
-            depth = np.flipud(self.renderer.render())
+            depth = self.renderer.render()
             
             self.rgb_pub.publish(Image(header=Header(stamp=now, frame_id='camera_optical_frame'), height=240, width=320, encoding='rgb8', step=960, data=rgb.tobytes()))
             self.depth_pub.publish(Image(header=Header(stamp=now, frame_id='camera_optical_frame'), height=240, width=320, encoding='32FC1', step=1280, data=depth.tobytes()))
