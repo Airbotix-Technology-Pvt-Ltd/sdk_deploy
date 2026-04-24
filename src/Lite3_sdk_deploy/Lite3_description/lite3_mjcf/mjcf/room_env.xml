@@ -1,0 +1,35 @@
+<mujoco model="room_environment">
+    <asset>
+        <texture name="skybox" type="skybox" builtin="gradient" rgb1=".3 .5 .7" rgb2="0 0 0" width="512" height="512"/>
+        <texture name="grid" type="2d" builtin="checker" rgb1=".1 .2 .3" rgb2=".2 .3 .4" width="300" height="300" mark="edge" markrgb=".8 .8 .8"/>
+        <material name="grid" texture="grid" texrepeat="1 1" texuniform="true"/>
+    </asset>
+    <worldbody>
+        <!-- Replace floor if needed, but since it's already in Lite3_lidar.xml, we'll just use the walls here -->
+        <!-- Room Walls (5x5 room) -->
+        <geom name="wall_n" type="box" pos="5 0 1" size="0.1 5 1" rgba="0.9 0.9 0.9 1"/>
+        <geom name="wall_s" type="box" pos="-5 0 1" size="0.1 5 1" rgba="0.9 0.9 0.9 1"/>
+        <geom name="wall_e" type="box" pos="0 5 1" size="5 0.1 1" rgba="0.9 0.9 0.9 1"/>
+        <geom name="wall_w" type="box" pos="0 -5 1" size="5 0.1 1" rgba="0.9 0.9 0.9 1"/>
+
+        <!-- Some random objects for Lidar to pick up -->
+        <body name="box_1" pos="2 2 0.25">
+            <geom type="box" size="0.25 0.25 0.25" rgba="0.8 0.2 0.2 1"/>
+        </body>
+        <body name="column_1" pos="-3 -2 0.5">
+            <geom type="cylinder" size="0.2 0.5" rgba="0.2 0.8 0.2 1"/>
+        </body>
+        <body name="sphere_1" pos="1 -3 0.3">
+            <geom type="sphere" size="0.3" rgba="0.2 0.2 0.8 1"/>
+        </body>
+        <body name="barrier_1" pos="0 3 0.4">
+            <geom type="box" size="1.5 0.1 0.4" rgba="0.7 0.7 0.2 1"/>
+        </body>
+        <body name="pillar_1" pos="-2 -3 0.75">
+            <geom type="cylinder" size="0.1 0.75" rgba="0.3 0.3 0.3 1"/>
+        </body>
+        <body name="capsule_1" pos="3 0 0.2">
+            <geom type="capsule" size="0.1 0.3" quat="0.707 0 0.707 0" rgba="0.5 0.5 0.8 1"/>
+        </body>
+    </worldbody>
+</mujoco>
