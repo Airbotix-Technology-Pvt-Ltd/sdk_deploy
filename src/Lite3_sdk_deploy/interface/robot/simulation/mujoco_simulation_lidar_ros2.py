@@ -28,7 +28,7 @@ MODEL_NAME = "Lite3"
 CURRENT_DIR = Path(__file__).resolve().parent
 
 # Define the XML path relative to the Python file (Matching standard bridge)
-XML_PATH = CURRENT_DIR / ".." / ".." / ".." / "Lite3_description" / "lite3_mjcf" / "mjcf" / "Lite3_stair.xml"
+XML_PATH = CURRENT_DIR / ".." / ".." / ".." / "Lite3_description" / "lite3_mjcf" / "mjcf" / "Lite3_stair_lidar.xml"
 XML_PATH = str(XML_PATH.resolve())
 
 USE_VIEWER = True
