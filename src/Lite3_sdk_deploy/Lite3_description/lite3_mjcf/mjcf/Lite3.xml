@@ -48,6 +48,28 @@
     <body name="TORSO" pos="0 0. 1." quat="1 0 0 0" childclass="robot">
       <freejoint name="floating_base" />
       <site name="imu_site" pos="0 0 0" size="0.005" rgba="1 0 0 1"/>
+      <camera name="front_vision_camera" pos="0.25 0 0.05" xyaxes="0 -1 0 0 0 1" fovy="60"/>
+      <!-- Visual Housing for Sensors (Weightless & Non-colliding) -->
+      <geom name="camera_box" type="box" size="0.02 0.05 0.02" pos="0.25 0 0.05" class="visual" mass="0" rgba="0.1 0.1 0.1 1" material="" />
+      <geom name="lidar_cylinder" type="cylinder" size="0.03 0.02" pos="0 0 0.1" class="visual" mass="0" rgba="0 0 0 1" material="" />
+      
+      <!-- Lidar Site Array -->
+      <site name="l_0" pos="0 0 0.1" quat="1 0 0 0"/>
+      <site name="l_1" pos="0 0 0.1" quat="0.980785 0 0 0.19509"/>
+      <site name="l_2" pos="0 0 0.1" quat="0.92388 0 0 0.382683"/>
+      <site name="l_3" pos="0 0 0.1" quat="0.83147 0 0 0.55557"/>
+      <site name="l_4" pos="0 0 0.1" quat="0.707107 0 0 0.707107"/>
+      <site name="l_5" pos="0 0 0.1" quat="0.55557 0 0 0.83147"/>
+      <site name="l_6" pos="0 0 0.1" quat="0.382683 0 0 0.92388"/>
+      <site name="l_7" pos="0 0 0.1" quat="0.19509 0 0 0.980785"/>
+      <site name="l_8" pos="0 0 0.1" quat="0 0 0 1"/>
+      <site name="l_9" pos="0 0 0.1" quat="-0.19509 0 0 0.980785"/>
+      <site name="l_10" pos="0 0 0.1" quat="-0.382683 0 0 0.92388"/>
+      <site name="l_11" pos="0 0 0.1" quat="-0.55557 0 0 0.83147"/>
+      <site name="l_12" pos="0 0 0.1" quat="-0.707107 0 0 0.707107"/>
+      <site name="l_13" pos="0 0 0.1" quat="-0.83147 0 0 0.55557"/>
+      <site name="l_14" pos="0 0 0.1" quat="-0.92388 0 0 0.382683"/>
+      <site name="l_15" pos="0 0 0.1" quat="-0.980785 0 0 0.19509"/>
       <inertial pos="0 0 0" mass="5.6056" diaginertia="0.02456 0.05518 0.07016"/>
       <geom name="TORSO_collision" pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="torso.STL" class="collision" />
       <geom name="TORSO_visual" pos="0 0 0" quat="1 0 0 0" material="" type="mesh" mesh="torso.STL" class="visual" />
@@ -192,5 +214,22 @@
     <velocimeter name="TORSO_site_vel" site="TORSO_site" />
     <accelerometer site="imu_site"/>
     <gyro          site="imu_site"/>
+    <!-- 360 Lidar Rangefinders -->
+    <rangefinder name="lidar_0" site="l_0"/>
+    <rangefinder name="lidar_1" site="l_1"/>
+    <rangefinder name="lidar_2" site="l_2"/>
+    <rangefinder name="lidar_3" site="l_3"/>
+    <rangefinder name="lidar_4" site="l_4"/>
+    <rangefinder name="lidar_5" site="l_5"/>
+    <rangefinder name="lidar_6" site="l_6"/>
+    <rangefinder name="lidar_7" site="l_7"/>
+    <rangefinder name="lidar_8" site="l_8"/>
+    <rangefinder name="lidar_9" site="l_9"/>
+    <rangefinder name="lidar_10" site="l_11"/>
+    <rangefinder name="lidar_11" site="l_11"/>
+    <rangefinder name="lidar_12" site="l_12"/>
+    <rangefinder name="lidar_13" site="l_13"/>
+    <rangefinder name="lidar_14" site="l_14"/>
+    <rangefinder name="lidar_15" site="l_15"/>
   </sensor>
 </mujoco>
