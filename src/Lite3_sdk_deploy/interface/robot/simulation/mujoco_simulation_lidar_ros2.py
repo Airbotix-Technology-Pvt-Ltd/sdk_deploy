@@ -164,7 +164,7 @@ class MuJoCoLidarSimulationNode(Node):
                     self.model,
                     site_name="lidar_site",
                     backend=backend,
-                    cutoff_dist=30.0,
+                    cutoff_dist=400.0,
                     args=backend_args[backend]
                 )
                 self.lidar_backend = backend
@@ -187,7 +187,7 @@ class MuJoCoLidarSimulationNode(Node):
         #   rays_theta = azimuth  (horizontal, 0..2π)
         #   rays_phi   = elevation (vertical,  -16°..+15° for XT32)
         # -----------------------------------------------------------------------
-        azim = np.deg2rad(np.linspace(0, 360, 1024, endpoint=False))   # 1024 azimuth steps
+        azim = np.deg2rad(np.linspace(0, 360, 2000, endpoint=False))   # 1024 azimuth steps
         elev = np.deg2rad(np.linspace(-16, 15, 32))                     # 32 elevation channels
         aa, ee = np.meshgrid(azim, elev)   # aa=azimuth, ee=elevation
         self.rays_theta = aa.flatten()     # theta = azimuth  ✓
@@ -306,7 +306,7 @@ class MuJoCoLidarSimulationNode(Node):
         dist   = self.lidar.get_distances()    # (N,)
 
         header   = Header(stamp=now, frame_id='lidar_link')
-        valid    = (dist > 0.05) & (dist < 29.9)
+        valid    = (dist > 0.60) & (dist < 400.9)
         pc2_msg  = point_cloud2.create_cloud_xyz32(header, points[valid])
         self.pc_pub.publish(pc2_msg)
 
