@@ -18,7 +18,7 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from builtin_interfaces.msg import Time
 from std_msgs.msg import Header
 from sensor_msgs.msg import LaserScan, Image, CameraInfo
-from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import TransformStamped, Quaternion
 import tf2_ros
 
 # Custom Lite3 messages
@@ -204,14 +204,26 @@ class MuJoCoLidarSimulationNode(Node):
         # Camera (Only if 'front_vision_camera' exists)
         cam_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_CAMERA, 'front_vision_camera')
         if cam_id != -1:
+            # 1. Render RGB
             self.renderer.update_scene(self.data, camera='front_vision_camera')
             self.renderer.disable_depth_rendering()
-            rgb = self.renderer.render()
-            self.renderer.enable_depth_rendering()
-            depth = self.renderer.render()
+            rgb = np.flipud(self.renderer.render())
             
-            self.rgb_pub.publish(Image(header=Header(stamp=now, frame_id='camera_optical_frame'), height=240, width=320, encoding='rgb8', step=960, data=rgb.tobytes()))
-            self.depth_pub.publish(Image(header=Header(stamp=now, frame_id='camera_optical_frame'), height=240, width=320, encoding='32FC1', step=1280, data=depth.tobytes()))
+            # 2. Render Depth
+            self.renderer.enable_depth_rendering()
+            depth = np.flipud(self.renderer.render())
+            
+            # Publish RGB
+            rgb_msg = Image(header=Header(stamp=now, frame_id='camera_optical_frame'), 
+                            height=240, width=320, encoding='rgb8', 
+                            step=960, data=rgb.tobytes())
+            self.rgb_pub.publish(rgb_msg)
+            
+            # Publish Depth
+            depth_msg = Image(header=Header(stamp=now, frame_id='camera_optical_frame'), 
+                              height=240, width=320, encoding='32FC1', 
+                              step=1280, data=depth.tobytes())
+            self.depth_pub.publish(depth_msg)
 
             info = CameraInfo(header=Header(stamp=now, frame_id='camera_optical_frame'))
             info.height, info.width = 240, 320
@@ -221,11 +233,35 @@ class MuJoCoLidarSimulationNode(Node):
             self.info_pub.publish(info)
 
         # TF (Always publish)
+        # 1. Odom to Base Link
         t = TransformStamped()
         t.header.stamp, t.header.frame_id, t.child_frame_id = now, 'odom', 'base_link'
         t.transform.translation.x, t.transform.translation.y, t.transform.translation.z = self.data.qpos[:3].tolist()
         t.transform.rotation.w, t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z = self.data.qpos[3:7].tolist()
         self.tf_broadcaster.sendTransform(t)
+
+        # 2. Base Link to Lidar Link
+        t_l = TransformStamped()
+        t_l.header.stamp, t_l.header.frame_id, t_l.child_frame_id = now, 'base_link', 'lidar_link'
+        t_l.transform.translation.x, t_l.transform.translation.y, t_l.transform.translation.z = 0.15, 0.0, 0.07 
+        t_l.transform.rotation.w = 1.0
+        self.tf_broadcaster.sendTransform(t_l)
+
+        # 3. Base Link to Camera Link
+        t_c = TransformStamped()
+        t_c.header.stamp, t_c.header.frame_id, t_c.child_frame_id = now, 'base_link', 'camera_link'
+        t_c.transform.translation.x, t_c.transform.translation.y, t_c.transform.translation.z = 0.25, 0.0, 0.05
+        t_c.transform.rotation.w = 1.0
+        self.tf_broadcaster.sendTransform(t_c)
+
+        # 4. Camera Link to Optical Frame (Standard ROS camera convention)
+        t_o = TransformStamped()
+        t_o.header.stamp, t_o.header.frame_id, t_o.child_frame_id = now, 'camera_link', 'camera_optical_frame'
+        t_o.transform.rotation.x = -0.5
+        t_o.transform.rotation.y = 0.5
+        t_o.transform.rotation.z = -0.5
+        t_o.transform.rotation.w = 0.5
+        self.tf_broadcaster.sendTransform(t_o)
 
 if __name__ == "__main__":
     rclpy.init()
