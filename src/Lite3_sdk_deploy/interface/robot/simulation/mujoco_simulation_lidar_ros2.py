@@ -34,6 +34,17 @@ from sensor_msgs_py import point_cloud2
 from geometry_msgs.msg import TransformStamped
 import tf2_ros
 
+def _quat_mul(q1, q2):
+    """Hamilton product of two [w,x,y,z] quaternions."""
+    w1, x1, y1, z1 = q1
+    w2, x2, y2, z2 = q2
+    return np.array([
+        w1*w2 - x1*x2 - y1*y2 - z1*z2,
+        w1*x2 + x1*w2 + y1*z2 - z1*y2,
+        w1*y2 - x1*z2 + y1*w2 + z1*x2,
+        w1*z2 + x1*y2 - y1*x2 + z1*w2,
+    ])
+
 # GPU/CPU-based Lidar Library
 try:
     from mujoco_lidar import MjLidarWrapper
@@ -348,51 +359,80 @@ class MuJoCoLidarSimulationNode(Node):
             self.info_pub.publish(info)
 
         # -------------------------------------------------------------------
-        # TF transforms
+        # TF transforms — broadcast EVERY body from MuJoCo with name mapping
         # -------------------------------------------------------------------
-        # odom → base_link
-        t = TransformStamped()
-        t.header.stamp      = now
-        t.header.frame_id   = 'odom'
-        t.child_frame_id    = 'base_link'
-        t.transform.translation.x, \
-        t.transform.translation.y, \
-        t.transform.translation.z = self.data.qpos[:3].tolist()
-        t.transform.rotation.w, \
-        t.transform.rotation.x, \
-        t.transform.rotation.y, \
-        t.transform.rotation.z = self.data.qpos[3:7].tolist()
-        self.tf_broadcaster.sendTransform(t)
+        NAME_MAP = {
+            "TORSO": "base_link",
+            "vision_mount": "camera_link",
+            "lidar_mount": "lidar_link",
+        }
 
-        # base_link → lidar_link
-        t_l = TransformStamped()
-        t_l.header.stamp    = now
-        t_l.header.frame_id = 'base_link'
-        t_l.child_frame_id  = 'lidar_link'
-        t_l.transform.translation.x = 0.15
-        t_l.transform.translation.z = 0.09
-        t_l.transform.rotation.w    = 1.0
-        self.tf_broadcaster.sendTransform(t_l)
+        for i in range(1, self.model.nbody):  # skip 0 = world body
+            body_name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_BODY, i)
+            if not body_name:
+                continue
+                
+            parent_id = self.model.body_parentid[i]
+            parent_name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_BODY, parent_id)
+            
+            # Map names
+            ros_body_name = NAME_MAP.get(body_name, body_name)
+            ros_parent_name = NAME_MAP.get(parent_name, parent_name)
+            
+            if parent_name == "world" or parent_name is None:
+                ros_parent_name = "odom"
 
-        # base_link → camera_link
-        t_c = TransformStamped()
-        t_c.header.stamp    = now
-        t_c.header.frame_id = 'base_link'
-        t_c.child_frame_id  = 'camera_link'
-        t_c.transform.translation.x = 0.25
-        t_c.transform.translation.z = 0.05
-        t_c.transform.rotation.w    = 1.0
-        self.tf_broadcaster.sendTransform(t_c)
+            # MuJoCo gives world-frame pos/quat (xpos/xquat)
+            pos = self.data.xpos[i] - self.data.xpos[parent_id]
+            
+            qp = self.data.xquat[parent_id]  # [w,x,y,z]
+            qc = self.data.xquat[i]          # [w,x,y,z]
+            qp_inv = np.array([qp[0], -qp[1], -qp[2], -qp[3]])
+            q_local = _quat_mul(qp_inv, qc)
 
-        # camera_link → camera_optical_frame
+            t = TransformStamped()
+            t.header.stamp = now
+            t.header.frame_id = ros_parent_name
+            t.child_frame_id = ros_body_name
+            t.transform.translation.x, t.transform.translation.y, t.transform.translation.z = pos.tolist()
+            t.transform.rotation.w = float(q_local[0])
+            t.transform.rotation.x = float(q_local[1])
+            t.transform.rotation.y = float(q_local[2])
+            t.transform.rotation.z = float(q_local[3])
+            self.tf_broadcaster.sendTransform(t)
+
+        # imu_link — publish from imu_site (relative to base_link/TORSO)
+        imu_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_SITE, "imu_site")
+        if imu_id != -1:
+            t_imu = TransformStamped()
+            t_imu.header.stamp = now
+            t_imu.header.frame_id = 'base_link'
+            t_imu.child_frame_id = 'imu_link'
+            # site pos/quat are usually in body frame if not otherwise specified, 
+            # but xpos/xquat are world frame.
+            site_xpos = self.data.site_xpos[imu_id]
+            site_xmat = self.data.site_xmat[imu_id].reshape(3, 3)
+            # Simplest for Lite3: IMU site is at (0,0,0) of TORSO
+            # We'll compute it from xpos/xquat of site vs TORSO
+            torso_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "TORSO")
+            p_pos = self.data.xpos[torso_id]
+            p_quat = self.data.xquat[torso_id]
+            
+            rel_pos = site_xpos - p_pos
+            # For simplicity if orientation is same as TORSO:
+            t_imu.transform.translation.x, t_imu.transform.translation.y, t_imu.transform.translation.z = rel_pos.tolist()
+            t_imu.transform.rotation.w = 1.0 # Standard orientation for Lite3 IMU site
+            self.tf_broadcaster.sendTransform(t_imu)
+
+        # Static rotation for Camera Optical Frame (relative to camera_link)
         t_o = TransformStamped()
-        t_o.header.stamp    = now
+        t_o.header.stamp = now
         t_o.header.frame_id = 'camera_link'
-        t_o.child_frame_id  = 'camera_optical_frame'
+        t_o.child_frame_id = 'camera_optical_frame'
         t_o.transform.rotation.x = -0.5
-        t_o.transform.rotation.y =  0.5
+        t_o.transform.rotation.y = 0.5
         t_o.transform.rotation.z = -0.5
-        t_o.transform.rotation.w =  0.5
+        t_o.transform.rotation.w = 0.5
         self.tf_broadcaster.sendTransform(t_o)
 
 
