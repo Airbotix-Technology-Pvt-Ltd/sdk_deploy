@@ -126,36 +126,32 @@ controller_server:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
       xy_goal_tolerance: 0.25
-      yaw_goal_tolerance: 0.25
+      yaw_goal_tolerance: 0.5
 
-    # -----------------------------------------------------------------------
-    # DWB velocity limits are set to match RL training ranges EXACTLY:
-    #   lin_vel_x: (-1.5, 1.5)  →  max_vel_x=1.5, min_vel_x=0.0 (fwd only)
-    #   lin_vel_y: (-0.2, 0.2)  →  max_vel_y=0.2  (policy barely trained on Y)
-    #   ang_vel_z: (-0.8, 0.8)  →  max_vel_theta=0.8
-    # Sending values outside these ranges puts the policy out-of-distribution.
-    # -----------------------------------------------------------------------
+    # Velocity limits matched to RL training ranges:
+    #   lin_vel_x: (-1.5, 1.5), lin_vel_y: (-0.2, 0.2), ang_vel_z: (-0.8, 0.8)
+    # RotateToGoal removed — policy corrects heading by curving while walking.
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: True
-      min_vel_x: 0.0            # forward-only navigation
-      min_vel_y: -0.2           # matches training range lower bound
-      max_vel_x: 1.5            # matches training range upper bound
-      max_vel_y: 0.2            # matches training range upper bound — keep small
-      max_vel_theta: 0.8        # matches training range upper bound
-      min_speed_xy: 0.0
+      min_vel_x: 0.0
+      min_vel_y: -0.2
+      max_vel_x: 1.5
+      max_vel_y: 0.2
+      max_vel_theta: 0.8
+      min_speed_xy: 0.15        # always keep forward motion — no stop-and-spin
       max_speed_xy: 1.5
-      min_speed_theta: 0.3      # ensure robot actually commits to turning
+      min_speed_theta: 0.0
       acc_lim_x: 3.0
-      acc_lim_y: 0.5            # low — policy not robust to large lateral accel
+      acc_lim_y: 0.5
       acc_lim_theta: 2.0
       decel_lim_x: -3.0
       decel_lim_y: -0.5
       decel_lim_theta: -2.0
       vx_samples: 20
-      vy_samples: 5             # few Y samples — policy barely trained on lateral
-      vtheta_samples: 40        # more theta samples for good rotation coverage
-      sim_time: 1.7
+      vy_samples: 5
+      vtheta_samples: 40
+      sim_time: 2.0
       linear_granularity: 0.05
       angular_granularity: 0.025
       transform_tolerance: 0.2
@@ -163,17 +159,14 @@ controller_server:
       trans_stopped_velocity: 0.25
       short_circuit_trajectory_evaluation: True
       stateful: True
-      critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist", "PreferForward"]
+      critics: ["Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist", "PreferForward"]
       BaseObstacle.scale: 0.02
       PathAlign.scale: 32.0
-      PathAlign.forward_point_distance: 0.1
-      GoalAlign.scale: 24.0
-      GoalAlign.forward_point_distance: 0.1
+      PathAlign.forward_point_distance: 0.2
+      GoalAlign.scale: 32.0
+      GoalAlign.forward_point_distance: 0.2
       PathDist.scale: 32.0
       GoalDist.scale: 24.0
-      RotateToGoal.scale: 32.0
-      RotateToGoal.slowing_factor: 1.5   # low — robot commits to final yaw quickly
-      RotateToGoal.lookahead_time: -1.0
       PreferForward.scale: 1.0
 
 local_costmap:
@@ -185,15 +178,15 @@ local_costmap:
       robot_base_frame: base_link
       use_sim_time: True
       rolling_window: true
-      width: 3
-      height: 3
+      width: 4                        # CHANGED: was 3 — wider window sees obstacles sooner
+      height: 4                       # CHANGED: was 3
       resolution: 0.05
-      robot_radius: 0.25
+      robot_radius: 0.35              # CHANGED: was 0.25 — larger footprint for safety margin
       plugins: ["voxel_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 3.0
-        inflation_radius: 0.55
+        cost_scaling_factor: 5.0      # CHANGED: was 3.0 — steeper cost falloff, robot avoids sooner
+        inflation_radius: 0.85        # CHANGED: was 0.55 — larger danger zone around obstacles
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"
         enabled: True
@@ -205,15 +198,15 @@ local_costmap:
         mark_threshold: 0
         observation_sources: pointcloud
         pointcloud:
-          topic: /point_cloud
+          topic: /cloud_registered_body
           max_obstacle_height: 2.0
           clearing: True
           marking: True
           data_type: "PointCloud2"
-          raytrace_max_range: 3.0
-          raytrace_min_range: 0.0
-          obstacle_max_range: 2.5
-          obstacle_min_range: 0.0
+          raytrace_max_range: 4.0     # CHANGED: was 3.0 — clear further behind robot
+          raytrace_min_range: 0.1     # CHANGED: was 0.0 — ignore self-hits near body
+          obstacle_max_range: 3.0     # CHANGED: was 2.5 — mark obstacles further out
+          obstacle_min_range: 0.1     # CHANGED: was 0.0 — ignore self-hits near body
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: True
@@ -227,7 +220,7 @@ global_costmap:
       global_frame: map
       robot_base_frame: base_link
       use_sim_time: True
-      robot_radius: 0.25
+      robot_radius: 0.35              # CHANGED: was 0.25 — matches local costmap
       resolution: 0.05
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
@@ -236,22 +229,22 @@ global_costmap:
         enabled: True
         observation_sources: pointcloud
         pointcloud:
-          topic: /point_cloud
+          topic: /cloud_registered_body
           max_obstacle_height: 2.0
           clearing: True
           marking: True
           data_type: "PointCloud2"
-          raytrace_max_range: 3.0
-          raytrace_min_range: 0.0
-          obstacle_max_range: 2.5
-          obstacle_min_range: 0.0
+          raytrace_max_range: 4.0     # CHANGED: was 3.0
+          raytrace_min_range: 0.1     # CHANGED: was 0.0 — ignore self-hits
+          obstacle_max_range: 3.0     # CHANGED: was 2.5 — see further obstacles
+          obstacle_min_range: 0.1     # CHANGED: was 0.0 — ignore self-hits
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: True
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 3.0
-        inflation_radius: 0.55
+        cost_scaling_factor: 5.0      # CHANGED: was 3.0 — steeper cost gradient
+        inflation_radius: 0.85        # CHANGED: was 0.55 — larger danger zone
       always_send_full_costmap: True
 
 map_server:
@@ -309,9 +302,9 @@ behavior_server:
     transform_tolerance: 0.1
     use_sim_time: true
     simulate_ahead_time: 2.0
-    max_rotational_vel: 0.8    # matches training ang_vel_z upper bound
-    min_rotational_vel: 0.3    # matches min_speed_theta
-    rotational_acc_lim: 2.0    # matches acc_lim_theta
+    max_rotational_vel: 0.8
+    min_rotational_vel: 0.3
+    rotational_acc_lim: 2.0
 
 robot_state_publisher:
   ros__parameters:
@@ -334,8 +327,8 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
-    max_velocity: [1.5, 0.2, 0.8]     # matches training: lin_x=1.5, lin_y=0.2, ang_z=0.8
-    min_velocity: [0.0, -0.2, -0.8]   # forward-only X; Y and theta match training lower bounds
+    max_velocity: [1.5, 0.2, 0.8]
+    min_velocity: [0.0, -0.2, -0.8]
     max_accel: [3.0, 0.5, 2.0]
     max_decel: [-3.0, -0.5, -2.0]
     odom_topic: "odom"

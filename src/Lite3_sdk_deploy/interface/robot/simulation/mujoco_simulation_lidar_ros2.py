@@ -40,12 +40,6 @@ def _quat_mul(q1, q2):
         w1*z2 + x1*y2 - y1*x2 + z1*w2,
     ])
 
-def _rotate_vec(v, q):
-    """Rotate vector v [x,y,z] by quaternion q [w,x,y,z]."""
-    # q * [0, v] * q_inv
-    qv = np.array([0, v[0], v[1], v[2]])
-    q_inv = np.array([q[0], -q[1], -q[2], -q[3]])
-    return _quat_mul(_quat_mul(q, qv), q_inv)[1:]
 
 # GPU/CPU-based Lidar Library
 try:
@@ -280,7 +274,7 @@ class MuJoCoLidarSimulationNode(Node):
                 self._publish_clock()
 
                 if step % STATE_PUB_DIVIDER  == 0: self._publish_robot_state()
-                if step % VISION_PUB_DIVIDER == 0: self._publish_vision_and_tf()
+                if step % VISION_PUB_DIVIDER == 0: self._publish_vision_only()
                 if self.viewer and self.viewer.is_running() and step % RENDER_INTERVAL == 0:
                     self.viewer.sync()
 
@@ -318,15 +312,20 @@ class MuJoCoLidarSimulationNode(Node):
         return np.array([roll, pitch, yaw], dtype=np.float32)
 
     def _publish_robot_state(self):
+        now = self._sim_time_msg()
+        # Sensor data indices (order defined in MJCF):
+        # 16-18 accelerometer, 19-21 gyro
+        if len(self.data.sensordata) >= 22:
+            body_acc = self.data.sensordata[16:19]
+            angvel_b = self.data.sensordata[19:22]
+        else:
+            body_acc = np.zeros(3)
+            angvel_b = np.zeros(3)
+
         q_world  = self.data.qpos[3:7]
         rpy      = self.quaternion_to_euler(q_world)
-        # Fix: check sensordata length, not nsensor count
-        body_acc = (self.data.sensordata[16:19]
-                    if len(self.data.sensordata) >= 19
-                    else np.zeros(3))
-        angvel_b = self.data.qvel[3:6]
-        stamp = self._sim_time_msg()
-        hdr   = Header(stamp=stamp, frame_id='imu_link')
+        
+        hdr   = Header(stamp=now, frame_id='imu_link')
 
         # --- sensor_msgs/Imu on /imu/data (consumed by FAST-LIO) ---
         imu_std = Imu()
@@ -337,21 +336,23 @@ class MuJoCoLidarSimulationNode(Node):
         imu_std.linear_acceleration.x = float(body_acc[0])
         imu_std.linear_acceleration.y = float(body_acc[1])
         imu_std.linear_acceleration.z = float(body_acc[2])
-        imu_std.orientation_covariance[0] = -1.0  # orientation not estimated
+        imu_std.orientation_covariance[0] = -1.0
         self.imu_std_pub.publish(imu_std)
 
+        # --- Custom Lite3 SDK messages (for controller compatibility) ---
         try:
             imu_msg = ImuData()
-            imu_msg.header = MetaType(stamp=stamp, frame_id=0)
+            imu_msg.header = MetaType(stamp=now, frame_id=0)
             imu_msg.data   = ImuDataValue()
-            imu_msg.data.roll,  imu_msg.data.pitch, imu_msg.data.yaw   = map(float, rpy)
+            imu_msg.data.roll, imu_msg.data.pitch, imu_msg.data.yaw = map(float, rpy)
             imu_msg.data.omega_x, imu_msg.data.omega_y, imu_msg.data.omega_z = map(float, angvel_b)
-            imu_msg.data.acc_x,   imu_msg.data.acc_y,   imu_msg.data.acc_z   = map(float, body_acc)
+            imu_msg.data.acc_x, imu_msg.data.acc_y, imu_msg.data.acc_z = map(float, body_acc)
             self.imu_pub.publish(imu_msg)
 
+            # 12 Motored joints start at qpos index 7
             q, dq = self.data.qpos[7:19], self.data.qvel[6:18]
             joints_msg = JointsData()
-            joints_msg.header = MetaType(stamp=stamp, frame_id=0)
+            joints_msg.header = MetaType(stamp=now, frame_id=0)
             joints_msg.data   = JointsDataValue()
             joints_msg.data.joints_data = [JointData() for _ in range(16)]
             for i in range(12):
@@ -363,29 +364,93 @@ class MuJoCoLidarSimulationNode(Node):
             for i in range(12, 16):
                 joints_msg.data.joints_data[i].status_word = 1
             self.joints_pub.publish(joints_msg)
-        except Exception:
-            pass  # graceful fallback when using mocked message classes
+        except (NameError, Exception):
+            pass # fallback if custom messages aren't installed
 
-    def _publish_vision_and_tf(self):
-        now = self._sim_time_msg()   # sim time — consistent with /clock and IMU stamps
+        # --- High-Frequency TF Broadcasting (at 200 Hz) ---
+        # 1. map -> odom (static identity)
+        t_map = TransformStamped()
+        t_map.header.stamp = now
+        t_map.header.frame_id = 'map'
+        t_map.child_frame_id = 'odom'
+        t_map.transform.rotation.w = 1.0
+        self.tf_broadcaster.sendTransform(t_map)
 
-        # -------------------------------------------------------------------
-        # Lidar — trace rays and publish PointCloud2
-        # MjLidarWrapper.trace_rays handles pose update internally via site_name
-        # -------------------------------------------------------------------
+        NAME_MAP = {"vision_mount": "camera_link", "lidar_mount": "lidar_link"}
+
+        for i in range(1, self.model.nbody):
+            body_name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_BODY, i)
+            if not body_name: continue
+                
+            parent_id = self.model.body_parentid[i]
+            parent_name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_BODY, parent_id)
+            
+            if body_name == "TORSO":
+                if self.publish_odom_tf:
+                    t_base = TransformStamped()
+                    t_base.header.stamp = now
+                    t_base.header.frame_id = "odom"
+                    t_base.child_frame_id = "base_link"
+                    t_base.transform.translation.x, t_base.transform.translation.y, t_base.transform.translation.z = self.data.xpos[i].tolist()
+                    t_base.transform.rotation.w, t_base.transform.rotation.x, t_base.transform.rotation.y, t_base.transform.rotation.z = self.data.xquat[i].tolist()
+                    self.tf_broadcaster.sendTransform(t_base)
+
+                for link in ["Lite3", "TORSO"]:
+                    t_link = TransformStamped()
+                    t_link.header.stamp = now
+                    t_link.header.frame_id = "base_link" if link == "Lite3" else "Lite3"
+                    t_link.child_frame_id = link
+                    t_link.transform.rotation.w = 1.0
+                    self.tf_broadcaster.sendTransform(t_link)
+                continue
+
+            ros_body_name = NAME_MAP.get(body_name, body_name)
+            ros_parent_name = NAME_MAP.get(parent_name, parent_name)
+            if parent_name == "world" or parent_name is None: ros_parent_name = "odom"
+
+            # World-to-Local conversion via Rotation Matrix (xmat) for limb offsets
+            pos_w = self.data.xpos[i] - self.data.xpos[parent_id]
+            rot_p = self.data.xmat[parent_id].reshape(3, 3)
+            pos_l = rot_p.T @ pos_w
+            
+            qp = self.data.xquat[parent_id]
+            qc = self.data.xquat[i]
+            qp_inv = np.array([qp[0], -qp[1], -qp[2], -qp[3]])
+            q_rel = _quat_mul(qp_inv, qc)
+
+            t = TransformStamped()
+            t.header.stamp = now
+            t.header.frame_id = ros_parent_name
+            t.child_frame_id = ros_body_name
+            t.transform.translation.x, t.transform.translation.y, t.transform.translation.z = pos_l.tolist()
+            t.transform.rotation.w, t.transform.rotation.x, t.transform.rotation.y, t.transform.rotation.z = q_rel.tolist()
+            self.tf_broadcaster.sendTransform(t)
+
+        # 2. TORSO -> imu_link
+        imu_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_SITE, "imu_site")
+        if imu_id != -1:
+            torso_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "TORSO")
+            t_imu = TransformStamped()
+            t_imu.header.stamp = now
+            t_imu.header.frame_id = 'TORSO'
+            t_imu.child_frame_id = 'imu_link'
+            t_imu.transform.translation.x, t_imu.transform.translation.y, t_imu.transform.translation.z = (self.data.site_xpos[imu_id] - self.data.xpos[torso_id]).tolist()
+            t_imu.transform.rotation.w = 1.0
+            self.tf_broadcaster.sendTransform(t_imu)
+
+    def _publish_vision_only(self):
+        now = self._sim_time_msg()
+
+        # 1. Lidar Scans
         self.lidar.trace_rays(self.data, self.rays_theta, self.rays_phi)
-        points = self.lidar.get_hit_points()   # (N, 3) in lidar local frame
-        dist   = self.lidar.get_distances()    # (N,)
+        points = self.lidar.get_hit_points()
+        dist   = self.lidar.get_distances()
 
         header = Header(stamp=now, frame_id='lidar_link')
         valid  = (dist > 0.30) & (dist < 100.0)
-        pts_v  = points[valid].astype(np.float32)   # (N,3)
-        dist_v = dist[valid]
+        pts_v  = points[valid].astype(np.float32)
+        intensity = np.clip(1.0 / np.maximum(dist[valid], 0.01), 0.0, 255.0).astype(np.float32)
 
-        # FAST-LIO requires an 'intensity' field — use 1/dist (closer = brighter)
-        intensity = np.clip(1.0 / np.maximum(dist_v, 0.01), 0.0, 255.0).astype(np.float32)
-
-        # Build PointCloud2 via structured numpy array (much faster than .tolist() at 64k pts)
         _FIELDS_XYZI = [
             PointField(name='x',         offset=0,  datatype=PointField.FLOAT32, count=1),
             PointField(name='y',         offset=4,  datatype=PointField.FLOAT32, count=1),
@@ -406,161 +471,34 @@ class MuJoCoLidarSimulationNode(Node):
             data=cloud_arr.tobytes(), is_dense=True)
         self.pc_pub.publish(pc2_msg)
 
-        # -------------------------------------------------------------------
-        # Camera — RGB + Depth
-        # update_scene must be called before EACH render pass
-        # -------------------------------------------------------------------
-        cam_id = mujoco.mj_name2id(
-            self.model, mujoco.mjtObj.mjOBJ_CAMERA, 'front_vision_camera')
+        # 2. Camera Rendering
+        cam_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_CAMERA, 'front_vision_camera')
         if cam_id != -1:
-            # RGB pass
             self.renderer.disable_depth_rendering()
             self.renderer.update_scene(self.data, camera='front_vision_camera')
             rgb = self.renderer.render().copy()
 
-            # Depth pass — update_scene again
             self.renderer.enable_depth_rendering()
             self.renderer.update_scene(self.data, camera='front_vision_camera')
             depth = self.renderer.render().copy()
-            self.renderer.disable_depth_rendering()  # reset for next RGB pass
+            self.renderer.disable_depth_rendering()
 
-            rgb_msg = Image(
-                header=Header(stamp=now, frame_id='camera_optical_frame'),
-                height=240, width=320, encoding='rgb8',
-                step=960, data=rgb.tobytes())
-            self.rgb_pub.publish(rgb_msg)
+            cam_hdr = Header(stamp=now, frame_id='camera_optical_frame')
+            self.rgb_pub.publish(Image(header=cam_hdr, height=240, width=320, encoding='rgb8', step=960, data=rgb.tobytes()))
+            self.depth_pub.publish(Image(header=cam_hdr, height=240, width=320, encoding='32FC1', step=1280, data=depth.tobytes()))
 
-            depth_msg = Image(
-                header=Header(stamp=now, frame_id='camera_optical_frame'),
-                height=240, width=320, encoding='32FC1',
-                step=1280, data=depth.tobytes())
-            self.depth_pub.publish(depth_msg)
-
-            info = CameraInfo(header=Header(stamp=now, frame_id='camera_optical_frame'))
-            info.height, info.width = 240, 320
+            info = CameraInfo(header=cam_hdr, height=240, width=320)
             f = (320 / 2) / np.tan(np.deg2rad(60 / 2))
             info.k = [f, 0.0, 160.0, 0.0, f, 120.0, 0.0, 0.0, 1.0]
             info.p = [f, 0.0, 160.0, 0.0, 0.0, f, 120.0, 0.0, 0.0, 0.0, 1.0, 0.0]
             self.info_pub.publish(info)
 
-        # -------------------------------------------------------------------
-        # TF transforms — broadcast EVERY body from MuJoCo with name mapping
-        # -------------------------------------------------------------------
-        NAME_MAP = {
-            "vision_mount": "camera_link",
-            "lidar_mount": "lidar_link",
-        }
-
-        # 1. map -> odom (identity — always published so the map frame exists)
-        t_map = TransformStamped()
-        t_map.header.stamp = now
-        t_map.header.frame_id = 'map'
-        t_map.child_frame_id = 'odom'
-        t_map.transform.rotation.w = 1.0
-        self.tf_broadcaster.sendTransform(t_map)
-
-        for i in range(1, self.model.nbody):  # skip 0 = world body
-            body_name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_BODY, i)
-            if not body_name:
-                continue
-                
-            parent_id = self.model.body_parentid[i]
-            parent_name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_BODY, parent_id)
-            
-            if body_name == "TORSO":
-                # Special hierarchy: odom -> base_link -> Lite3 -> TORSO
-                # Skip odom->base_link when navigation=True (FAST-LIO publishes it)
-                if self.publish_odom_tf:
-                    t_base = TransformStamped()
-                    t_base.header.stamp = now
-                    t_base.header.frame_id = "odom"
-                    t_base.child_frame_id = "base_link"
-                    t_base.transform.translation.x, t_base.transform.translation.y, t_base.transform.translation.z = self.data.xpos[i].tolist()
-                    t_base.transform.rotation.w = float(self.data.xquat[i][0])
-                    t_base.transform.rotation.x = float(self.data.xquat[i][1])
-                    t_base.transform.rotation.y = float(self.data.xquat[i][2])
-                    t_base.transform.rotation.z = float(self.data.xquat[i][3])
-                    self.tf_broadcaster.sendTransform(t_base)
-
-                # base_link -> Lite3 (identity)
-                t_l3 = TransformStamped()
-                t_l3.header.stamp = now
-                t_l3.header.frame_id = "base_link"
-                t_l3.child_frame_id = "Lite3"
-                t_l3.transform.rotation.w = 1.0
-                self.tf_broadcaster.sendTransform(t_l3)
-
-                # Lite3 -> TORSO (identity)
-                t_tor = TransformStamped()
-                t_tor.header.stamp = now
-                t_tor.header.frame_id = "Lite3"
-                t_tor.child_frame_id = "TORSO"
-                t_tor.transform.rotation.w = 1.0
-                self.tf_broadcaster.sendTransform(t_tor)
-                continue
-
-            # Map names
-            ros_body_name = NAME_MAP.get(body_name, body_name)
-            ros_parent_name = NAME_MAP.get(parent_name, parent_name)
-            
-            if parent_name == "world" or parent_name is None:
-                ros_parent_name = "odom"
-
-            # MuJoCo gives world-frame pos/quat (xpos/xquat)
-            # ROS TF expects relative transform in parent frame
-            pos_world = self.data.xpos[i] - self.data.xpos[parent_id]
-            
-            qp = self.data.xquat[parent_id]  # [w,x,y,z]
-            qc = self.data.xquat[i]          # [w,x,y,z]
-            qp_inv = np.array([qp[0], -qp[1], -qp[2], -qp[3]])
-            
-            # Rotate global displacement into parent frame
-            pos_local = _rotate_vec(pos_world, qp_inv)
-            q_local = _quat_mul(qp_inv, qc)
-
-            t = TransformStamped()
-            t.header.stamp = now
-            t.header.frame_id = ros_parent_name
-            t.child_frame_id = ros_body_name
-            t.transform.translation.x, t.transform.translation.y, t.transform.translation.z = pos_local.tolist()
-            t.transform.rotation.w = float(q_local[0])
-            t.transform.rotation.x = float(q_local[1])
-            t.transform.rotation.y = float(q_local[2])
-            t.transform.rotation.z = float(q_local[3])
-            self.tf_broadcaster.sendTransform(t)
-
-        # imu_link — publish from imu_site (relative to TORSO)
-        imu_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_SITE, "imu_site")
-        if imu_id != -1:
-            t_imu = TransformStamped()
-            t_imu.header.stamp = now
-            t_imu.header.frame_id = 'TORSO'
-            t_imu.child_frame_id = 'imu_link'
-            # site pos/quat are usually in body frame if not otherwise specified, 
-            # but xpos/xquat are world frame.
-            site_xpos = self.data.site_xpos[imu_id]
-            site_xmat = self.data.site_xmat[imu_id].reshape(3, 3)
-            # Simplest for Lite3: IMU site is at (0,0,0) of TORSO
-            # We'll compute it from xpos/xquat of site vs TORSO
-            torso_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "TORSO")
-            p_pos = self.data.xpos[torso_id]
-            p_quat = self.data.xquat[torso_id]
-            
-            rel_pos = site_xpos - p_pos
-            # For simplicity if orientation is same as TORSO:
-            t_imu.transform.translation.x, t_imu.transform.translation.y, t_imu.transform.translation.z = rel_pos.tolist()
-            t_imu.transform.rotation.w = 1.0 # Standard orientation for Lite3 IMU site
-            self.tf_broadcaster.sendTransform(t_imu)
-
-        # Static rotation for Camera Optical Frame (relative to camera_link)
+        # 3. Static Camera Optical Rotation
         t_o = TransformStamped()
         t_o.header.stamp = now
         t_o.header.frame_id = 'camera_link'
         t_o.child_frame_id = 'camera_optical_frame'
-        t_o.transform.rotation.x = -0.5
-        t_o.transform.rotation.y = 0.5
-        t_o.transform.rotation.z = -0.5
-        t_o.transform.rotation.w = 0.5
+        t_o.transform.rotation.x, t_o.transform.rotation.y, t_o.transform.rotation.z, t_o.transform.rotation.w = -0.5, 0.5, -0.5, 0.5
         self.tf_broadcaster.sendTransform(t_o)
 
 
