@@ -10,6 +10,8 @@
 """
 
 import os
+import sys
+import argparse
 import time
 from pathlib import Path
 import numpy as np
@@ -106,8 +108,17 @@ def _make_backend_args(body_id: int) -> dict:
 
 
 class MuJoCoLidarSimulationNode(Node):
-    def __init__(self, model_key: str = MODEL_NAME, xml_path: str = str(XML_PATH)):
+    def __init__(self, model_key: str = MODEL_NAME, xml_path: str = str(XML_PATH),
+                 publish_odom_tf: bool = True):
         super().__init__('mujoco_lidar_simulation')
+
+        # When running with FAST-LIO / Nav2, set publish_odom_tf=False to let
+        # the SLAM stack own the odom -> base_link transform.
+        self.publish_odom_tf = publish_odom_tf
+        if not publish_odom_tf:
+            self.get_logger().info(
+                'Navigation mode: odom -> base_link TF suppressed '
+                '(FAST-LIO/Nav2 owns that transform).')
 
         if not os.path.isfile(xml_path):
             raise FileNotFoundError(f"Cannot find MJCF: {xml_path}")
@@ -433,7 +444,7 @@ class MuJoCoLidarSimulationNode(Node):
             "lidar_mount": "lidar_link",
         }
 
-        # 1. map -> odom (identity)
+        # 1. map -> odom (identity — always published so the map frame exists)
         t_map = TransformStamped()
         t_map.header.stamp = now
         t_map.header.frame_id = 'map'
@@ -451,27 +462,28 @@ class MuJoCoLidarSimulationNode(Node):
             
             if body_name == "TORSO":
                 # Special hierarchy: odom -> base_link -> Lite3 -> TORSO
-                # 1. odom -> base_link (MuJoCo world pose of TORSO)
-                t_base = TransformStamped()
-                t_base.header.stamp = now
-                t_base.header.frame_id = "odom"
-                t_base.child_frame_id = "base_link"
-                t_base.transform.translation.x, t_base.transform.translation.y, t_base.transform.translation.z = self.data.xpos[i].tolist()
-                t_base.transform.rotation.w = float(self.data.xquat[i][0])
-                t_base.transform.rotation.x = float(self.data.xquat[i][1])
-                t_base.transform.rotation.y = float(self.data.xquat[i][2])
-                t_base.transform.rotation.z = float(self.data.xquat[i][3])
-                self.tf_broadcaster.sendTransform(t_base)
-                
-                # 2. base_link -> Lite3 (identity)
+                # Skip odom->base_link when navigation=True (FAST-LIO publishes it)
+                if self.publish_odom_tf:
+                    t_base = TransformStamped()
+                    t_base.header.stamp = now
+                    t_base.header.frame_id = "odom"
+                    t_base.child_frame_id = "base_link"
+                    t_base.transform.translation.x, t_base.transform.translation.y, t_base.transform.translation.z = self.data.xpos[i].tolist()
+                    t_base.transform.rotation.w = float(self.data.xquat[i][0])
+                    t_base.transform.rotation.x = float(self.data.xquat[i][1])
+                    t_base.transform.rotation.y = float(self.data.xquat[i][2])
+                    t_base.transform.rotation.z = float(self.data.xquat[i][3])
+                    self.tf_broadcaster.sendTransform(t_base)
+
+                # base_link -> Lite3 (identity)
                 t_l3 = TransformStamped()
                 t_l3.header.stamp = now
                 t_l3.header.frame_id = "base_link"
                 t_l3.child_frame_id = "Lite3"
                 t_l3.transform.rotation.w = 1.0
                 self.tf_broadcaster.sendTransform(t_l3)
-                
-                # 3. Lite3 -> TORSO (identity)
+
+                # Lite3 -> TORSO (identity)
                 t_tor = TransformStamped()
                 t_tor.header.stamp = now
                 t_tor.header.frame_id = "Lite3"
@@ -542,8 +554,23 @@ class MuJoCoLidarSimulationNode(Node):
 
 
 if __name__ == "__main__":
-    rclpy.init()
-    node = MuJoCoLidarSimulationNode()
+    parser = argparse.ArgumentParser(
+        description="MuJoCo Lidar Simulation Bridge",
+        # strip ROS args so argparse doesn't choke on --ros-args etc.
+        epilog="ROS2 args (--ros-args ...) are forwarded to rclpy and ignored here."
+    )
+    parser.add_argument(
+        "--navigation",
+        action="store_true",
+        default=False,
+        help="Enable navigation mode: suppresses odom->base_link TF so FAST-LIO/Nav2 "
+             "can own that transform. Default: off (sim publishes ground-truth odom)."
+    )
+    # Parse only our args; leave ROS args for rclpy
+    args, ros_args = parser.parse_known_args()
+
+    rclpy.init(args=ros_args)
+    node = MuJoCoLidarSimulationNode(publish_odom_tf=not args.navigation)
     try:
         node.start()
     except KeyboardInterrupt:
