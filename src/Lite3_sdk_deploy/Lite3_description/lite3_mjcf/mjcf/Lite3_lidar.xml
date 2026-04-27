@@ -48,9 +48,19 @@
     <body name="TORSO" pos="0 0. 1." quat="1 0 0 0" childclass="robot">
       <freejoint name="floating_base" />
       <site name="imu_site" pos="0 0 0" size="0.005" rgba="1 0 0 1"/>
-      <body name="vision_mount" pos="0.25 0 0.05" quat="1 0 0 0">
-        <geom type="box" size="0.01 0.04 0.02" rgba="0.2 0.2 0.2 1" />
-        <camera name="front_vision_camera" pos="0.01 0 0" quat="0.5 -0.5 0.5 -0.5" fovy="60" />
+      <!-- Camera mount: 0.30 m forward, 0.05 m up from TORSO origin -->
+      <!-- Box half-sizes: 0.02(x) × 0.04(y) × 0.02(z) — sits flush on torso front face -->
+      <body name="vision_mount" pos="0.20 0 0.05" quat="1 0 0 0">
+        <geom type="box" size="0.02 0.04 0.02" rgba="0.2 0.2 0.2 1"
+              contype="0" conaffinity="0" group="2"/>
+        <!-- Camera sits 2 cm in front of the mount box centre, facing forward. -->
+        <!-- MuJoCo cameras look along -Z by default.                            -->
+        <!-- Standard Forward Camera: -Z_cam=Forward, +Y_cam=Up, +X_cam=Right -->
+        <!-- Quat: [w=0.5, x=0.5, y=-0.5, z=-0.5] -->
+        <camera name="front_vision_camera"
+                pos="0.02 0 0"
+                quat="0.5 0.5 -0.5 -0.5"
+                fovy="60" />
       </body>
 
       <body name="lidar_mount" pos="0.15 0 0.07">

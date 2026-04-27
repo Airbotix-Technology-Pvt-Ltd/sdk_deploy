@@ -409,12 +409,12 @@ class MuJoCoLidarSimulationNode(Node):
             # RGB pass
             self.renderer.disable_depth_rendering()
             self.renderer.update_scene(self.data, camera='front_vision_camera')
-            rgb = np.flipud(self.renderer.render())
+            rgb = self.renderer.render().copy()
 
-            # Depth pass — update_scene again so depth is from current state
+            # Depth pass — update_scene again
             self.renderer.enable_depth_rendering()
             self.renderer.update_scene(self.data, camera='front_vision_camera')
-            depth = np.flipud(self.renderer.render())
+            depth = self.renderer.render().copy()
             self.renderer.disable_depth_rendering()  # reset for next RGB pass
 
             rgb_msg = Image(
