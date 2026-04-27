@@ -128,26 +128,26 @@ controller_server:
       xy_goal_tolerance: 0.25
       yaw_goal_tolerance: 0.25
 
-    # DWB parameters tuned for Lite3 quadruped
+    # DWB parameters tuned for Lite3 quadruped — forward-only navigation
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: True
-      min_vel_x: -0.5        # quadruped can walk backwards
-      min_vel_y: -0.3        # quadruped can strafe
-      max_vel_x: 0.5         # Lite3 is faster than TurtleBot3
-      max_vel_y: 0.3         # lateral movement capability
+      min_vel_x: 0.0           # CHANGED: was -0.5; disallow backward motion entirely
+      min_vel_y: -0.3          # quadruped can still strafe left/right
+      max_vel_x: 0.5
+      max_vel_y: 0.3
       max_vel_theta: 1.0
       min_speed_xy: 0.0
       max_speed_xy: 0.5
       min_speed_theta: 0.0
       acc_lim_x: 2.5
-      acc_lim_y: 1.0         # lateral acceleration
+      acc_lim_y: 1.0
       acc_lim_theta: 3.2
       decel_lim_x: -2.5
       decel_lim_y: -1.0
       decel_lim_theta: -3.2
       vx_samples: 20
-      vy_samples: 10         # more Y samples since it can strafe
+      vy_samples: 10
       vtheta_samples: 20
       sim_time: 1.7
       linear_granularity: 0.05
@@ -157,7 +157,7 @@ controller_server:
       trans_stopped_velocity: 0.25
       short_circuit_trajectory_evaluation: True
       stateful: True
-      critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
+      critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist", "PreferForward"]  # CHANGED: added PreferForward
       BaseObstacle.scale: 0.02
       PathAlign.scale: 32.0
       PathAlign.forward_point_distance: 0.1
@@ -168,6 +168,7 @@ controller_server:
       RotateToGoal.scale: 32.0
       RotateToGoal.slowing_factor: 5.0
       RotateToGoal.lookahead_time: -1.0
+      PreferForward.scale: 1.0  # ADDED: penalizes backward/sideways trajectories
 
 local_costmap:
   local_costmap:
@@ -181,7 +182,7 @@ local_costmap:
       width: 3
       height: 3
       resolution: 0.05
-      robot_radius: 0.25       # Lite3 is slightly wider than TurtleBot3
+      robot_radius: 0.25
       plugins: ["voxel_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
@@ -198,11 +199,11 @@ local_costmap:
         mark_threshold: 0
         observation_sources: pointcloud
         pointcloud:
-          topic: /point_cloud         # Lite3 XT-32 publishes PointCloud2
+          topic: /point_cloud
           max_obstacle_height: 2.0
           clearing: True
           marking: True
-          data_type: "PointCloud2"    # changed from LaserScan
+          data_type: "PointCloud2"
           raytrace_max_range: 3.0
           raytrace_min_range: 0.0
           obstacle_max_range: 2.5
@@ -220,7 +221,7 @@ global_costmap:
       global_frame: map
       robot_base_frame: base_link
       use_sim_time: True
-      robot_radius: 0.25       # Lite3 footprint
+      robot_radius: 0.25
       resolution: 0.05
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
@@ -229,11 +230,11 @@ global_costmap:
         enabled: True
         observation_sources: pointcloud
         pointcloud:
-          topic: /point_cloud         # Lite3 XT-32 publishes PointCloud2
+          topic: /point_cloud
           max_obstacle_height: 2.0
           clearing: True
           marking: True
-          data_type: "PointCloud2"    # changed from LaserScan
+          data_type: "PointCloud2"
           raytrace_max_range: 3.0
           raytrace_min_range: 0.0
           obstacle_max_range: 2.5
@@ -327,8 +328,8 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
-    max_velocity: [0.5, 0.3, 1.0]   # increased for Lite3; added Y for strafing
-    min_velocity: [-0.5, -0.3, -1.0]
+    max_velocity: [0.5, 0.3, 1.0]
+    min_velocity: [0.0, -0.3, -1.0]   # CHANGED: X was -0.5; matches min_vel_x=0.0
     max_accel: [2.5, 1.0, 3.2]
     max_decel: [-2.5, -1.0, -3.2]
     odom_topic: "odom"
