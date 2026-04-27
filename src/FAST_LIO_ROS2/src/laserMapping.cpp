@@ -129,6 +129,7 @@ V3D position_last(Zero3d);
 V3D Lidar_T_wrt_IMU(Zero3d);
 M3D Lidar_R_wrt_IMU(Eye3d);
 string child_frame_id = "body";
+string parent_frame_id = "map";
 
 /*** EKF inputs and output ***/
 MeasureGroup Measures;
@@ -634,7 +635,7 @@ void set_posestamp(T & out)
 
 void publish_odometry(const rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pubOdomAftMapped, std::unique_ptr<tf2_ros::TransformBroadcaster> & tf_br)
 {
-    odomAftMapped.header.frame_id = "map";
+    odomAftMapped.header.frame_id = parent_frame_id;
     odomAftMapped.child_frame_id = child_frame_id;
     odomAftMapped.header.stamp = get_ros_time(lidar_end_time);
     set_posestamp(odomAftMapped.pose);
@@ -652,7 +653,7 @@ void publish_odometry(const rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPt
     }
 
     geometry_msgs::msg::TransformStamped trans;
-    trans.header.frame_id = "map";
+    trans.header.frame_id = parent_frame_id;
     trans.header.stamp = odomAftMapped.header.stamp;
     trans.child_frame_id = child_frame_id;
     trans.transform.translation.x = odomAftMapped.pose.pose.position.x;
@@ -838,7 +839,8 @@ public:
         this->declare_parameter<bool>("mapping.extrinsic_est_en", true);
         this->declare_parameter<bool>("pcd_save.pcd_save_en", false);
         this->declare_parameter<int>("pcd_save.interval", -1);
-        this->declare_parameter<string>("publish.child_frame_id", "body");
+        this->declare_parameter<string>("publish.child_frame_id", "base_link");
+        this->declare_parameter<string>("publish.parent_frame_id", "map");
         this->declare_parameter<vector<double>>("mapping.extrinsic_T", vector<double>());
         this->declare_parameter<vector<double>>("mapping.extrinsic_R", vector<double>());
 
@@ -875,7 +877,8 @@ public:
         this->get_parameter_or<bool>("mapping.extrinsic_est_en", extrinsic_est_en, true);
         this->get_parameter_or<bool>("pcd_save.pcd_save_en", pcd_save_en, false);
         this->get_parameter_or<int>("pcd_save.interval", pcd_save_interval, -1);
-        this->get_parameter_or<string>("publish.child_frame_id", child_frame_id, "body");
+        this->get_parameter_or<string>("publish.child_frame_id", child_frame_id, "base_link");
+        this->get_parameter_or<string>("publish.parent_frame_id", parent_frame_id, "map");
         this->get_parameter_or<vector<double>>("mapping.extrinsic_T", extrinT, vector<double>());
         this->get_parameter_or<vector<double>>("mapping.extrinsic_R", extrinR, vector<double>());
 
