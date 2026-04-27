@@ -196,7 +196,7 @@ local_costmap:
         z_voxels: 16
         max_obstacle_height: 2.0
         mark_threshold: 0
-        observation_sources: pointcloud
+        observation_sources: pointcloud raw_lidar
         pointcloud:
           topic: /cloud_registered_body
           max_obstacle_height: 2.0
@@ -206,7 +206,17 @@ local_costmap:
           raytrace_max_range: 4.0     # CHANGED: was 3.0 — clear further behind robot
           raytrace_min_range: 0.1     # CHANGED: was 0.0 — ignore self-hits near body
           obstacle_max_range: 3.0     # CHANGED: was 2.5 — mark obstacles further out
-          obstacle_min_range: 0.1     # CHANGED: was 0.0 — ignore self-hits near body
+          obstacle_min_range: 0.05
+        raw_lidar:
+          topic: /lidar_points
+          max_obstacle_height: 2.0
+          clearing: True
+          marking: True
+          data_type: "PointCloud2"
+          raytrace_max_range: 4.0
+          raytrace_min_range: 0.05
+          obstacle_max_range: 3.0
+          obstacle_min_range: 0.05
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: True
@@ -227,7 +237,7 @@ global_costmap:
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
-        observation_sources: pointcloud
+        observation_sources: pointcloud raw_lidar
         pointcloud:
           topic: /cloud_registered_body
           max_obstacle_height: 2.0
@@ -237,7 +247,17 @@ global_costmap:
           raytrace_max_range: 4.0     # CHANGED: was 3.0
           raytrace_min_range: 0.1     # CHANGED: was 0.0 — ignore self-hits
           obstacle_max_range: 3.0     # CHANGED: was 2.5 — see further obstacles
-          obstacle_min_range: 0.1     # CHANGED: was 0.0 — ignore self-hits
+          obstacle_min_range: 0.05
+        raw_lidar:
+          topic: /lidar_points
+          max_obstacle_height: 2.0
+          clearing: True
+          marking: True
+          data_type: "PointCloud2"
+          raytrace_max_range: 4.0
+          raytrace_min_range: 0.05
+          obstacle_max_range: 3.0
+          obstacle_min_range: 0.05
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: True
