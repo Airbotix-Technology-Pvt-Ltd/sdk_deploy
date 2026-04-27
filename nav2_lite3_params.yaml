@@ -110,7 +110,7 @@ controller_server:
     use_sim_time: True
     controller_frequency: 20.0
     min_x_velocity_threshold: 0.001
-    min_y_velocity_threshold: 0.001  # quadruped can move in Y — lowered from 0.5
+    min_y_velocity_threshold: 0.001
     min_theta_velocity_threshold: 0.001
     failure_tolerance: 0.3
     progress_checker_plugin: "progress_checker"
@@ -132,23 +132,23 @@ controller_server:
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: True
-      min_vel_x: 0.0           # CHANGED: was -0.5; disallow backward motion entirely
-      min_vel_y: -0.3          # quadruped can still strafe left/right
+      min_vel_x: 0.0           # no backward motion
+      min_vel_y: -0.3
       max_vel_x: 0.5
       max_vel_y: 0.3
-      max_vel_theta: 1.0
+      max_vel_theta: 2.0        # CHANGED: was 1.0 — faster rotation
       min_speed_xy: 0.0
       max_speed_xy: 0.5
-      min_speed_theta: 0.0
+      min_speed_theta: 0.4      # CHANGED: was 0.0 — enforce minimum rotation so robot actually turns
       acc_lim_x: 2.5
       acc_lim_y: 1.0
-      acc_lim_theta: 3.2
+      acc_lim_theta: 4.0        # CHANGED: was 3.2 — snappier rotation acceleration
       decel_lim_x: -2.5
       decel_lim_y: -1.0
-      decel_lim_theta: -3.2
+      decel_lim_theta: -4.0     # CHANGED: was -3.2
       vx_samples: 20
       vy_samples: 10
-      vtheta_samples: 20
+      vtheta_samples: 40        # CHANGED: was 20 — more theta samples for better rotation planning
       sim_time: 1.7
       linear_granularity: 0.05
       angular_granularity: 0.025
@@ -157,7 +157,7 @@ controller_server:
       trans_stopped_velocity: 0.25
       short_circuit_trajectory_evaluation: True
       stateful: True
-      critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist", "PreferForward"]  # CHANGED: added PreferForward
+      critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist", "PreferForward"]
       BaseObstacle.scale: 0.02
       PathAlign.scale: 32.0
       PathAlign.forward_point_distance: 0.1
@@ -166,9 +166,9 @@ controller_server:
       PathDist.scale: 32.0
       GoalDist.scale: 24.0
       RotateToGoal.scale: 32.0
-      RotateToGoal.slowing_factor: 5.0
+      RotateToGoal.slowing_factor: 2.0  # CHANGED: was 5.0 — less aggressive slowing near goal yaw
       RotateToGoal.lookahead_time: -1.0
-      PreferForward.scale: 1.0  # ADDED: penalizes backward/sideways trajectories
+      PreferForward.scale: 1.0
 
 local_costmap:
   local_costmap:
@@ -303,9 +303,9 @@ behavior_server:
     transform_tolerance: 0.1
     use_sim_time: true
     simulate_ahead_time: 2.0
-    max_rotational_vel: 1.0
+    max_rotational_vel: 2.0    # CHANGED: was 1.0 — matches new max_vel_theta
     min_rotational_vel: 0.4
-    rotational_acc_lim: 3.2
+    rotational_acc_lim: 4.0    # CHANGED: was 3.2 — matches new acc_lim_theta
 
 robot_state_publisher:
   ros__parameters:
@@ -328,10 +328,10 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
-    max_velocity: [0.5, 0.3, 1.0]
-    min_velocity: [0.0, -0.3, -1.0]   # CHANGED: X was -0.5; matches min_vel_x=0.0
-    max_accel: [2.5, 1.0, 3.2]
-    max_decel: [-2.5, -1.0, -3.2]
+    max_velocity: [0.5, 0.3, 2.0]      # CHANGED: theta was 1.0 — matches max_vel_theta
+    min_velocity: [0.0, -0.3, -2.0]    # CHANGED: X was -0.5; theta was -1.0
+    max_accel: [2.5, 1.0, 4.0]         # CHANGED: theta was 3.2
+    max_decel: [-2.5, -1.0, -4.0]      # CHANGED: theta was -3.2
     odom_topic: "odom"
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]
