@@ -79,3 +79,29 @@
     pcd_save:
       pcd_save_en: true
       interval: -1
+      
+    pointcloud_to_laserscan:
+      enabled: true
+      cloud_in: "/lidar_points"
+      scan_out: "/scan"
+      
+      # Setting target_frame to empty forces it to use the input cloud header frame
+      target_frame: "base_link"   # OK if your TF is correct
+      transform_tolerance: 0.1
+
+      # ✅ FIXED HEIGHT FILTER
+      min_height: -0.2
+      max_height: 0.5
+
+      # ✅ FULL SCAN
+      angle_min: -3.14159
+      angle_max: 3.14159
+      angle_increment: 0.01
+
+      scan_time: 0.1
+
+      # ✅ RANGE
+      range_min: 0.1
+      range_max: 20.0
+
+      use_inf: true
