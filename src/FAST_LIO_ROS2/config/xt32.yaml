@@ -86,7 +86,7 @@
       scan_out: "/scan"
       
       # Setting target_frame to empty forces it to use the input cloud header frame
-      target_frame: "base_link"   # OK if your TF is correct
+      target_frame: "lidar_link"  
       transform_tolerance: 0.1
 
       # ✅ FIXED HEIGHT FILTER

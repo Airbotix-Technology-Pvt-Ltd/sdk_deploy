@@ -38,6 +38,11 @@ amcl:
     z_rand: 0.5
     z_short: 0.05
     scan_topic: /scan
+    set_initial_pose: true
+    initial_pose:
+      x: 0.0
+      y: 0.0
+      yaw: 0.0
 
 bt_navigator:
   ros__parameters:
@@ -135,26 +140,26 @@ controller_server:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: True
       min_vel_x: 0.0
-      min_vel_y: -0.2
-      max_vel_x: 1.5
-      max_vel_y: 0.2
-      max_vel_theta: 0.8
-      min_speed_xy: 0.15        # always keep forward motion — no stop-and-spin
-      max_speed_xy: 1.5
+      min_vel_y: -0.16
+      max_vel_x: 1.2
+      max_vel_y: 0.16
+      max_vel_theta: 0.64
+      min_speed_xy: 0.12
+      max_speed_xy: 1.2
       min_speed_theta: 0.0
-      acc_lim_x: 3.0
-      acc_lim_y: 0.5
-      acc_lim_theta: 2.0
-      decel_lim_x: -3.0
-      decel_lim_y: -0.5
-      decel_lim_theta: -2.0
+      acc_lim_x: 2.4
+      acc_lim_y: 0.4
+      acc_lim_theta: 1.6
+      decel_lim_x: -2.4
+      decel_lim_y: -0.4
+      decel_lim_theta: -1.6
       vx_samples: 20
       vy_samples: 5
       vtheta_samples: 40
       sim_time: 2.0
       linear_granularity: 0.05
       angular_granularity: 0.025
-      transform_tolerance: 0.2
+      transform_tolerance: 0.1
       xy_goal_tolerance: 0.25
       trans_stopped_velocity: 0.25
       short_circuit_trajectory_evaluation: True
@@ -182,48 +187,23 @@ local_costmap:
       height: 4                       # CHANGED: was 3
       resolution: 0.05
       robot_radius: 0.35              # CHANGED: was 0.25 — larger footprint for safety margin
-      plugins: ["voxel_layer", "inflation_layer"]
+      plugins: ["obstacle_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 5.0      # CHANGED: was 3.0 — steeper cost falloff, robot avoids sooner
         inflation_radius: 0.85        # CHANGED: was 0.55 — larger danger zone around obstacles
-      voxel_layer:
-        plugin: "nav2_costmap_2d::VoxelLayer"
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
-        publish_voxel_map: True
-        origin_z: 0.0
-        z_resolution: 0.05
-        z_voxels: 16
-        max_obstacle_height: 2.0
-        mark_threshold: 0
-        observation_sources: pointcloud laser_scan
-        pointcloud:
-          topic: /cloud_registered_body
-          max_obstacle_height: 2.0
-          clearing: True
-          marking: True
-          data_type: "PointCloud2"
-          raytrace_max_range: 4.0     # CHANGED: was 3.0 — clear further behind robot
-          raytrace_min_range: 0.1     # CHANGED: was 0.0 — ignore self-hits near body
-          obstacle_max_range: 3.0     # CHANGED: was 2.5 — mark obstacles further out
-          obstacle_min_range: 0.05
+        observation_sources: laser_scan
         laser_scan:
           topic: /scan
           max_obstacle_height: 2.0
           clearing: True
           marking: True
           data_type: "LaserScan"
-          raytrace_max_range: 4.0
-          raytrace_min_range: 0.05
-          obstacle_max_range: 3.0
-          obstacle_min_range: 0.05
-        raw_lidar:
-          topic: /lidar_points
-          max_obstacle_height: 2.0
-          clearing: True
-          marking: True
-          data_type: "PointCloud2"
-          raytrace_max_range: 4.0
+          inf_is_valid: True
+          raytrace_max_range: 5.0
           raytrace_min_range: 0.05
           obstacle_max_range: 3.0
           obstacle_min_range: 0.05
@@ -247,34 +227,15 @@ global_costmap:
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
-        observation_sources: pointcloud laser_scan
-        pointcloud:
-          topic: /cloud_registered_body
-          max_obstacle_height: 2.0
-          clearing: True
-          marking: True
-          data_type: "PointCloud2"
-          raytrace_max_range: 4.0     # CHANGED: was 3.0
-          raytrace_min_range: 0.1     # CHANGED: was 0.0 — ignore self-hits
-          obstacle_max_range: 3.0     # CHANGED: was 2.5 — see further obstacles
-          obstacle_min_range: 0.05
+        observation_sources: laser_scan
         laser_scan:
           topic: /scan
           max_obstacle_height: 2.0
           clearing: True
           marking: True
           data_type: "LaserScan"
-          raytrace_max_range: 4.0
-          raytrace_min_range: 0.05
-          obstacle_max_range: 3.0
-          obstacle_min_range: 0.05
-        raw_lidar:
-          topic: /lidar_points
-          max_obstacle_height: 2.0
-          clearing: True
-          marking: True
-          data_type: "PointCloud2"
-          raytrace_max_range: 4.0
+          inf_is_valid: True
+          raytrace_max_range: 5.0
           raytrace_min_range: 0.05
           obstacle_max_range: 3.0
           obstacle_min_range: 0.05
