@@ -26,7 +26,7 @@ amcl:
     recovery_alpha_fast: 0.0
     recovery_alpha_slow: 0.0
     resample_interval: 1
-    robot_model_type: "nav2_amcl::OmniMotionModel"  # quadruped can strafe
+    robot_model_type: "nav2_amcl::OmniMotionModel"
     save_pose_rate: 0.5
     sigma_hit: 0.2
     tf_broadcast: true
@@ -37,7 +37,7 @@ amcl:
     z_max: 0.05
     z_rand: 0.5
     z_short: 0.05
-    scan_topic: /point_cloud  # Lite3 publishes PointCloud2, not LaserScan
+    scan_topic: /point_cloud
 
 bt_navigator:
   ros__parameters:
@@ -128,27 +128,33 @@ controller_server:
       xy_goal_tolerance: 0.25
       yaw_goal_tolerance: 0.25
 
-    # DWB parameters tuned for Lite3 quadruped — forward-only navigation
+    # -----------------------------------------------------------------------
+    # DWB velocity limits are set to match RL training ranges EXACTLY:
+    #   lin_vel_x: (-1.5, 1.5)  →  max_vel_x=1.5, min_vel_x=0.0 (fwd only)
+    #   lin_vel_y: (-0.2, 0.2)  →  max_vel_y=0.2  (policy barely trained on Y)
+    #   ang_vel_z: (-0.8, 0.8)  →  max_vel_theta=0.8
+    # Sending values outside these ranges puts the policy out-of-distribution.
+    # -----------------------------------------------------------------------
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: True
-      min_vel_x: 0.0           # no backward motion
-      min_vel_y: -0.3
-      max_vel_x: 0.5
-      max_vel_y: 0.3
-      max_vel_theta: 2.0        # CHANGED: was 1.0 — faster rotation
+      min_vel_x: 0.0            # forward-only navigation
+      min_vel_y: -0.2           # matches training range lower bound
+      max_vel_x: 1.5            # matches training range upper bound
+      max_vel_y: 0.2            # matches training range upper bound — keep small
+      max_vel_theta: 0.8        # matches training range upper bound
       min_speed_xy: 0.0
-      max_speed_xy: 0.5
-      min_speed_theta: 0.4      # CHANGED: was 0.0 — enforce minimum rotation so robot actually turns
-      acc_lim_x: 2.5
-      acc_lim_y: 1.0
-      acc_lim_theta: 4.0        # CHANGED: was 3.2 — snappier rotation acceleration
-      decel_lim_x: -2.5
-      decel_lim_y: -1.0
-      decel_lim_theta: -4.0     # CHANGED: was -3.2
+      max_speed_xy: 1.5
+      min_speed_theta: 0.3      # ensure robot actually commits to turning
+      acc_lim_x: 3.0
+      acc_lim_y: 0.5            # low — policy not robust to large lateral accel
+      acc_lim_theta: 2.0
+      decel_lim_x: -3.0
+      decel_lim_y: -0.5
+      decel_lim_theta: -2.0
       vx_samples: 20
-      vy_samples: 10
-      vtheta_samples: 40        # CHANGED: was 20 — more theta samples for better rotation planning
+      vy_samples: 5             # few Y samples — policy barely trained on lateral
+      vtheta_samples: 40        # more theta samples for good rotation coverage
       sim_time: 1.7
       linear_granularity: 0.05
       angular_granularity: 0.025
@@ -166,7 +172,7 @@ controller_server:
       PathDist.scale: 32.0
       GoalDist.scale: 24.0
       RotateToGoal.scale: 32.0
-      RotateToGoal.slowing_factor: 2.0  # CHANGED: was 5.0 — less aggressive slowing near goal yaw
+      RotateToGoal.slowing_factor: 1.5   # low — robot commits to final yaw quickly
       RotateToGoal.lookahead_time: -1.0
       PreferForward.scale: 1.0
 
@@ -303,9 +309,9 @@ behavior_server:
     transform_tolerance: 0.1
     use_sim_time: true
     simulate_ahead_time: 2.0
-    max_rotational_vel: 2.0    # CHANGED: was 1.0 — matches new max_vel_theta
-    min_rotational_vel: 0.4
-    rotational_acc_lim: 4.0    # CHANGED: was 3.2 — matches new acc_lim_theta
+    max_rotational_vel: 0.8    # matches training ang_vel_z upper bound
+    min_rotational_vel: 0.3    # matches min_speed_theta
+    rotational_acc_lim: 2.0    # matches acc_lim_theta
 
 robot_state_publisher:
   ros__parameters:
@@ -328,10 +334,10 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
-    max_velocity: [0.5, 0.3, 2.0]      # CHANGED: theta was 1.0 — matches max_vel_theta
-    min_velocity: [0.0, -0.3, -2.0]    # CHANGED: X was -0.5; theta was -1.0
-    max_accel: [2.5, 1.0, 4.0]         # CHANGED: theta was 3.2
-    max_decel: [-2.5, -1.0, -4.0]      # CHANGED: theta was -3.2
+    max_velocity: [1.5, 0.2, 0.8]     # matches training: lin_x=1.5, lin_y=0.2, ang_z=0.8
+    min_velocity: [0.0, -0.2, -0.8]   # forward-only X; Y and theta match training lower bounds
+    max_accel: [3.0, 0.5, 2.0]
+    max_decel: [-3.0, -0.5, -2.0]
     odom_topic: "odom"
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]
