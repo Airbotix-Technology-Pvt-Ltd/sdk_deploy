@@ -362,10 +362,17 @@ class MuJoCoLidarSimulationNode(Node):
         # TF transforms — broadcast EVERY body from MuJoCo with name mapping
         # -------------------------------------------------------------------
         NAME_MAP = {
-            "TORSO": "base_link",
             "vision_mount": "camera_link",
             "lidar_mount": "lidar_link",
         }
+
+        # 1. map -> odom (identity)
+        t_map = TransformStamped()
+        t_map.header.stamp = now
+        t_map.header.frame_id = 'map'
+        t_map.child_frame_id = 'odom'
+        t_map.transform.rotation.w = 1.0
+        self.tf_broadcaster.sendTransform(t_map)
 
         for i in range(1, self.model.nbody):  # skip 0 = world body
             body_name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_BODY, i)
@@ -375,6 +382,37 @@ class MuJoCoLidarSimulationNode(Node):
             parent_id = self.model.body_parentid[i]
             parent_name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_BODY, parent_id)
             
+            if body_name == "TORSO":
+                # Special hierarchy: odom -> base_link -> Lite3 -> TORSO
+                # 1. odom -> base_link (MuJoCo world pose of TORSO)
+                t_base = TransformStamped()
+                t_base.header.stamp = now
+                t_base.header.frame_id = "odom"
+                t_base.child_frame_id = "base_link"
+                t_base.transform.translation.x, t_base.transform.translation.y, t_base.transform.translation.z = self.data.xpos[i].tolist()
+                t_base.transform.rotation.w = float(self.data.xquat[i][0])
+                t_base.transform.rotation.x = float(self.data.xquat[i][1])
+                t_base.transform.rotation.y = float(self.data.xquat[i][2])
+                t_base.transform.rotation.z = float(self.data.xquat[i][3])
+                self.tf_broadcaster.sendTransform(t_base)
+                
+                # 2. base_link -> Lite3 (identity)
+                t_l3 = TransformStamped()
+                t_l3.header.stamp = now
+                t_l3.header.frame_id = "base_link"
+                t_l3.child_frame_id = "Lite3"
+                t_l3.transform.rotation.w = 1.0
+                self.tf_broadcaster.sendTransform(t_l3)
+                
+                # 3. Lite3 -> TORSO (identity)
+                t_tor = TransformStamped()
+                t_tor.header.stamp = now
+                t_tor.header.frame_id = "Lite3"
+                t_tor.child_frame_id = "TORSO"
+                t_tor.transform.rotation.w = 1.0
+                self.tf_broadcaster.sendTransform(t_tor)
+                continue
+
             # Map names
             ros_body_name = NAME_MAP.get(body_name, body_name)
             ros_parent_name = NAME_MAP.get(parent_name, parent_name)
@@ -401,12 +439,12 @@ class MuJoCoLidarSimulationNode(Node):
             t.transform.rotation.z = float(q_local[3])
             self.tf_broadcaster.sendTransform(t)
 
-        # imu_link — publish from imu_site (relative to base_link/TORSO)
+        # imu_link — publish from imu_site (relative to TORSO)
         imu_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_SITE, "imu_site")
         if imu_id != -1:
             t_imu = TransformStamped()
             t_imu.header.stamp = now
-            t_imu.header.frame_id = 'base_link'
+            t_imu.header.frame_id = 'TORSO'
             t_imu.child_frame_id = 'imu_link'
             # site pos/quat are usually in body frame if not otherwise specified, 
             # but xpos/xquat are world frame.
