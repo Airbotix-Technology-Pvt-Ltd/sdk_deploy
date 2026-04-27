@@ -40,6 +40,13 @@ def _quat_mul(q1, q2):
         w1*z2 + x1*y2 - y1*x2 + z1*w2,
     ])
 
+def _rotate_vec(v, q):
+    """Rotate vector v [x,y,z] by quaternion q [w,x,y,z]."""
+    # q * [0, v] * q_inv
+    qv = np.array([0, v[0], v[1], v[2]])
+    q_inv = np.array([q[0], -q[1], -q[2], -q[3]])
+    return _quat_mul(_quat_mul(q, qv), q_inv)[1:]
+
 # GPU/CPU-based Lidar Library
 try:
     from mujoco_lidar import MjLidarWrapper
@@ -500,18 +507,22 @@ class MuJoCoLidarSimulationNode(Node):
                 ros_parent_name = "odom"
 
             # MuJoCo gives world-frame pos/quat (xpos/xquat)
-            pos = self.data.xpos[i] - self.data.xpos[parent_id]
+            # ROS TF expects relative transform in parent frame
+            pos_world = self.data.xpos[i] - self.data.xpos[parent_id]
             
             qp = self.data.xquat[parent_id]  # [w,x,y,z]
             qc = self.data.xquat[i]          # [w,x,y,z]
             qp_inv = np.array([qp[0], -qp[1], -qp[2], -qp[3]])
+            
+            # Rotate global displacement into parent frame
+            pos_local = _rotate_vec(pos_world, qp_inv)
             q_local = _quat_mul(qp_inv, qc)
 
             t = TransformStamped()
             t.header.stamp = now
             t.header.frame_id = ros_parent_name
             t.child_frame_id = ros_body_name
-            t.transform.translation.x, t.transform.translation.y, t.transform.translation.z = pos.tolist()
+            t.transform.translation.x, t.transform.translation.y, t.transform.translation.z = pos_local.tolist()
             t.transform.rotation.w = float(q_local[0])
             t.transform.rotation.x = float(q_local[1])
             t.transform.rotation.y = float(q_local[2])
