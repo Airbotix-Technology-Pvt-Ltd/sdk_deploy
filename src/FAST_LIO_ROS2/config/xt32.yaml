@@ -5,35 +5,39 @@
     # Core Performance Tuning
     # -----------------------
     feature_extract_enable: false
-    point_filter_num: 6          # ↑ reduce points (was 3)
+    point_filter_num: 4          # MuJoCo sim: 32×2000=64000 pts/scan — keep moderate
     max_iteration: 3
 
-    filter_size_surf: 1.0        # ↑ downsample surf
-    filter_size_map: 1.5         # ↑ downsample map
+    filter_size_surf: 0.5        # finer resolution for sim environment
+    filter_size_map: 0.5         # finer map voxels for sim
 
-    cube_side_length: 200.0      # ↓ memory (was 1000)
+    cube_side_length: 200.0
 
     runtime_pos_log_enable: false
     map_file_path: "./simulation.pcd"
 
     # -----------------------
-    # Topics
+    # Topics — match mujoco_simulation_lidar_ros2.py
     # -----------------------
     common:
-      lid_topic: "/point_cloud"
-      imu_topic: "/imu/data"
+      lid_topic: "/lidar_points"   # pc_pub topic in the MuJoCo bridge
+      imu_topic: "/imu/data"       # standard ROS2 IMU topic
       time_sync_en: false
       time_offset_lidar_to_imu: 0.0
 
     # -----------------------
-    # Preprocess (Isaac Sim)
+    # Preprocess — MuJoCo synthetic Hesai XT32 model
+    #   lidar_type: 1  →  generic / AVIA-like (xyz+intensity, ordered)
+    #   scan_line:  32 →  XT32 has 32 elevation channels
+    #   scan_rate:  10 →  10 Hz publish rate in the bridge (VISION_PUB_DIVIDER=30, DT=0.001)
+    #   blind:      0.3→  MuJoCo sim starts clean; real XT32 uses 0.5 m
     # -----------------------
     preprocess:
-      lidar_type: 2
-      scan_line: 32
-      scan_rate: 10              # ↓ to 5 if still lag
-      timestamp_unit: 3
-      blind: 0.5
+      lidar_type: 7              # 7=generic xyz+intensity (matches MuJoCo bridge output)
+      scan_line: 32              # XT32: 32 elevation channels
+      scan_rate: 10              # matches bridge publish rate (~33 Hz is VISION_PUB_DIVIDER)
+      timestamp_unit: 1          # 1=seconds (ROS2 header stamp)
+      blind: 0.3                 # minimum valid range in metres (was 0.5)
 
     # -----------------------
     # Mapping (CRITICAL)
@@ -45,26 +49,28 @@
       b_gyr_cov: 0.0001
 
       fov_degree: 360.0
-      det_range: 30.0            # ↓ HUGE FIX (was 100)
+      det_range: 30.0            # matches MuJoCo bridge valid dist < 400 m; 30 m is enough
 
       extrinsic_est_en: false
-      extrinsic_T: [0., 0., 0.]
+      # LiDAR at lidar_mount (pos="0.15 0 0.07") + lidar_site (pos="0 0 0.02")
+      # → total offset from base_link (TORSO): x=0.15m forward, z=0.09m up
+      extrinsic_T: [0.15, 0., 0.09]
       extrinsic_R: [1., 0., 0.,
                     0., 1., 0.,
                     0., 0., 1.]
 
     # -----------------------
-    # Publishing (LIGHTWEIGHT)
+    # Publishing
     # -----------------------
     publish:
       path_en: true
       map_en: true
 
-      scan_publish_en: false         # ↓ disable heavy topics
-      dense_publish_en: false        # ↓ major performance gain
+      scan_publish_en: true          # enable for RViz debugging; set false in production
+      dense_publish_en: false        # keep off — 64k pts/scan is already heavy
       scan_bodyframe_pub_en: false
 
-      child_frame_id: "base_link"
+      child_frame_id: "base_link"    # FAST-LIO odom child frame
 
     # -----------------------
     # Map Saving

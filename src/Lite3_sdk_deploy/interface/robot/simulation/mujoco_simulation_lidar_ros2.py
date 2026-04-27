@@ -2,19 +2,11 @@
  * @file mujoco_simulation_lidar_ros2.py
  * @brief High-resolution Lidar (Hesai XT32) and RGB-D Camera Simulation
  * @author Antigravity (using mujoco-lidar library)
- * @version 2.3
+ * @version 2.4
  *
- * Changes from v2.2:
- *  - Fixed backend-specific args (bodyexclude valid for all backends per lidar_wrapper.py)
- *  - Fixed scan pattern: theta=azimuth, phi=elevation (matches scan_gen convention)
- *  - Fixed busy-wait loop: spin_once uses DT*0.5 timeout instead of 0.0
- *  - Fixed exit(1) in __init__ replaced with RuntimeError
- *  - Fixed sensordata bounds check: len(sensordata) not nsensor
- *  - Fixed depth render: update_scene called before each render pass
- *  - Fixed viewer: is_running() checked before sync()
- *  - Fixed main: node stored, clean shutdown with try/finally
- *  - Added GPU (Taichi) backend with RTX 4060 optimized args
- *  - Backend priority: taichi(GPU) -> jax -> cpu
+ * Changes from v2.3:
+ *  - Added /clock publisher (rosgraph_msgs/Clock) — MuJoCo sim time broadcast
+ *    every simulation step so all use_sim_time nodes sync to the simulator.
 """
 
 import os
@@ -29,7 +21,8 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from builtin_interfaces.msg import Time
 from std_msgs.msg import Header
-from sensor_msgs.msg import Image, CameraInfo, PointCloud2
+from rosgraph_msgs.msg import Clock
+from sensor_msgs.msg import Image, CameraInfo, PointCloud2, PointField, Imu
 from sensor_msgs_py import point_cloud2
 from geometry_msgs.msg import TransformStamped
 import tf2_ros
@@ -142,7 +135,19 @@ class MuJoCoLidarSimulationNode(Node):
             depth=5
         )
 
-        # Standard Publishers
+        # Clock publisher — allows all use_sim_time nodes to follow MuJoCo time
+        # Use BEST_EFFORT + depth=1 so we never queue stale clock messages
+        clock_qos = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=1
+        )
+        self.clock_pub = self.create_publisher(Clock, '/clock', clock_qos)
+
+        # FAST-LIO IMU publisher — standard sensor_msgs/Imu on /imu/data
+        self.imu_std_pub = self.create_publisher(Imu, '/imu/data', qos_profile)
+
+        # Custom Lite3 publishers
         self.imu_pub    = self.create_publisher(ImuData,    '/IMU_DATA',    qos_profile)
         self.joints_pub = self.create_publisher(JointsData, '/JOINTS_DATA', qos_profile)
 
@@ -253,6 +258,9 @@ class MuJoCoLidarSimulationNode(Node):
                 mujoco.mj_step(self.model, self.data)
                 self.timestamp = step * DT
 
+                # Publish /clock every step — highest priority, smallest message
+                self._publish_clock()
+
                 if step % STATE_PUB_DIVIDER  == 0: self._publish_robot_state()
                 if step % VISION_PUB_DIVIDER == 0: self._publish_vision_and_tf()
                 if self.viewer and self.viewer.is_running() and step % RENDER_INTERVAL == 0:
@@ -260,6 +268,29 @@ class MuJoCoLidarSimulationNode(Node):
 
             # Use DT*0.5 timeout so spin doesn't busy-wait at 100% CPU
             rclpy.spin_once(self, timeout_sec=DT * 0.5)
+
+    def _publish_clock(self):
+        """Publish MuJoCo simulation time on /clock.
+
+        Any ROS2 node launched with --ros-args -p use_sim_time:=true will
+        use this time source instead of wall-clock. Critical for FAST-LIO
+        timestamp alignment.
+        """
+        sec    = int(self.timestamp)
+        nanosec = int((self.timestamp - sec) * 1e9)
+        clock_msg = Clock()
+        clock_msg.clock.sec    = sec
+        clock_msg.clock.nanosec = nanosec
+        self.clock_pub.publish(clock_msg)
+
+    def _sim_time_msg(self) -> Time:
+        """Return a builtin_interfaces/Time from MuJoCo sim time.
+
+        Always use this (not get_clock().now()) for message headers so that
+        the point cloud, IMU, and TF stamps are all consistent with /clock.
+        """
+        sec = int(self.timestamp)
+        return Time(sec=sec, nanosec=int((self.timestamp - sec) * 1e9))
 
     def quaternion_to_euler(self, q):
         w, x, y, z = q
@@ -276,8 +307,20 @@ class MuJoCoLidarSimulationNode(Node):
                     if len(self.data.sensordata) >= 19
                     else np.zeros(3))
         angvel_b = self.data.qvel[3:6]
-        stamp    = Time(sec=int(self.timestamp),
-                        nanosec=int((self.timestamp % 1) * 1e9))
+        stamp = self._sim_time_msg()
+        hdr   = Header(stamp=stamp, frame_id='imu_link')
+
+        # --- sensor_msgs/Imu on /imu/data (consumed by FAST-LIO) ---
+        imu_std = Imu()
+        imu_std.header = hdr
+        imu_std.angular_velocity.x    = float(angvel_b[0])
+        imu_std.angular_velocity.y    = float(angvel_b[1])
+        imu_std.angular_velocity.z    = float(angvel_b[2])
+        imu_std.linear_acceleration.x = float(body_acc[0])
+        imu_std.linear_acceleration.y = float(body_acc[1])
+        imu_std.linear_acceleration.z = float(body_acc[2])
+        imu_std.orientation_covariance[0] = -1.0  # orientation not estimated
+        self.imu_std_pub.publish(imu_std)
 
         try:
             imu_msg = ImuData()
@@ -306,7 +349,7 @@ class MuJoCoLidarSimulationNode(Node):
             pass  # graceful fallback when using mocked message classes
 
     def _publish_vision_and_tf(self):
-        now = self.get_clock().now().to_msg()
+        now = self._sim_time_msg()   # sim time — consistent with /clock and IMU stamps
 
         # -------------------------------------------------------------------
         # Lidar — trace rays and publish PointCloud2
@@ -316,9 +359,33 @@ class MuJoCoLidarSimulationNode(Node):
         points = self.lidar.get_hit_points()   # (N, 3) in lidar local frame
         dist   = self.lidar.get_distances()    # (N,)
 
-        header   = Header(stamp=now, frame_id='lidar_link')
-        valid    = (dist > 0.60) & (dist < 400.9)
-        pc2_msg  = point_cloud2.create_cloud_xyz32(header, points[valid])
+        header = Header(stamp=now, frame_id='lidar_link')
+        valid  = (dist > 0.30) & (dist < 100.0)
+        pts_v  = points[valid].astype(np.float32)   # (N,3)
+        dist_v = dist[valid]
+
+        # FAST-LIO requires an 'intensity' field — use 1/dist (closer = brighter)
+        intensity = np.clip(1.0 / np.maximum(dist_v, 0.01), 0.0, 255.0).astype(np.float32)
+
+        # Build PointCloud2 via structured numpy array (much faster than .tolist() at 64k pts)
+        _FIELDS_XYZI = [
+            PointField(name='x',         offset=0,  datatype=PointField.FLOAT32, count=1),
+            PointField(name='y',         offset=4,  datatype=PointField.FLOAT32, count=1),
+            PointField(name='z',         offset=8,  datatype=PointField.FLOAT32, count=1),
+            PointField(name='intensity', offset=12, datatype=PointField.FLOAT32, count=1),
+        ]
+        n = len(pts_v)
+        cloud_arr = np.empty(n, dtype=np.dtype([
+            ('x', np.float32), ('y', np.float32), ('z', np.float32), ('intensity', np.float32)]))
+        cloud_arr['x'] = pts_v[:, 0]
+        cloud_arr['y'] = pts_v[:, 1]
+        cloud_arr['z'] = pts_v[:, 2]
+        cloud_arr['intensity'] = intensity
+        pc2_msg = PointCloud2(
+            header=header, height=1, width=n,
+            fields=_FIELDS_XYZI, is_bigendian=False,
+            point_step=16, row_step=16 * n,
+            data=cloud_arr.tobytes(), is_dense=True)
         self.pc_pub.publish(pc2_msg)
 
         # -------------------------------------------------------------------
