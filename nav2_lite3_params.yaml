@@ -109,7 +109,7 @@ controller_server:
       regulated_linear_scaling_min_radius: 0.9
       regulated_linear_scaling_min_speed: 0.25
       use_rotate_to_heading: false
-      allow_reversing: false
+      allow_reversing: true
       max_angular_accel: 1.6
       max_robot_pose_search_dist: 10.0
       use_interpolation: true
@@ -225,7 +225,7 @@ planner_server:
       max_iterations: 1000000
       max_on_approach_iterations: 1000
       max_planning_time: 5.0
-      motion_model_for_search: "DUBIN"  # true forward-only curves
+      motion_model_for_search: "REEDS_SHEPP"  # allows reversals for tight maneuvering
       angle_quantization_bins: 72             # 5° resolution
       analytic_expansion_ratio: 3.5
       analytic_expansion_max_length: 3.0
@@ -299,7 +299,7 @@ velocity_smoother:
     scale_velocities: False
     feedback: "OPEN_LOOP"
     max_velocity: [1.5, 0.2, 0.8]
-    min_velocity: [0.0, -0.2, -0.8]
+    min_velocity: [-0.2, -0.2, -0.8]
     max_accel: [3.0, 0.5, 2.0]
     max_decel: [-3.0, -0.5, -2.0]
     odom_topic: "odom"
