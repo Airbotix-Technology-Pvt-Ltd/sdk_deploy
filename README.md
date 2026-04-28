@@ -47,7 +47,7 @@ Integrated 360 Lidar and Depth camera stack for PointCloud2 streams and spatial 
 Integrated a high-performance, optimized version of **FAST_LIO_ROS2** for the Lite3. Stripped of hardware-specific dependencies (`livox_ros_driver2`) to ensure universal simulation and physical LiDAR compatibility.
 
 ### **5. `Mapping & Navigation Artifacts`**
-Generated a high-fidelity **2D Occupancy Grid Map** (`map.pgm`/`map.yaml`) for Nav2 integration, derived from our globally registered 3D pointcloud maps using the specialized **`pcd_to_grid.py`** projection utility.
+Generated a high-fidelity **2D Occupancy Grid Map** (`map/big_area/map.yaml`) for Nav2 integration, derived from our globally registered 3D pointcloud maps using the specialized **`pcd_to_grid.py`** projection utility.
 
 ---
 
@@ -79,7 +79,7 @@ Follow these steps to launch the full Lite3 navigation stack (FAST-LIO + Nav2) i
 ### 1. Launch the Simulation (MuJoCo)
 Starts the physics engine and ROS2 bridge for Lidar and IMU.
 ```bash
-python3 src/Lite3_sdk_deploy/interface/robot/simulation/mujoco_simulation_lidar_ros2.py --navigation --ros-args -p use_sim_time:=true
+python3 ./src/Lite3_sdk_deploy/interface/robot/simulation/mujoco_simulation_lidar_ros2.py --navigation --ros-args -p use_sim_time:=true
 ```
 
 ### 2. Start SLAM (FAST-LIO)
@@ -92,8 +92,8 @@ ros2 launch fast_lio mapping.launch.py config_file:=xt32.yaml rviz:=false use_si
 Starts the path planning and controller stack using our **custom mission file** which excludes AMCL to avoid conflicts with FAST-LIO.
 ```bash
 ros2 launch launch/lite3_bringup.launch.py \
-  map:=$(pwd)/map.yaml \
-  params_file:=$(pwd)/nav2_lite3_params.yaml \
+  map:=$(pwd)/map/big_area/map.yaml \
+  params_file:=$(pwd)/config/nav2_lite3_params.yaml \
   use_sim_time:=true
 ```
 

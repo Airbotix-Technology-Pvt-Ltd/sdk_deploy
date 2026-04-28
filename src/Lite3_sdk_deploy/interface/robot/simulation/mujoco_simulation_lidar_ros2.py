@@ -130,6 +130,7 @@ class MuJoCoLidarSimulationNode(Node):
         self.dof_num = 12
 
         self._set_initial_pose(model_key)
+        self.torso_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "TORSO")
 
         # Cache
         self.kp_cmd  = np.zeros((self.dof_num, 1), np.float32)
@@ -311,6 +312,15 @@ class MuJoCoLidarSimulationNode(Node):
         yaw   = np.arctan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z))
         return np.array([roll, pitch, yaw], dtype=np.float32)
 
+    def _is_robot_body(self, body_id):
+        """Check if a body (by ID) is part of the robot (descendant of TORSO)."""
+        curr = body_id
+        while curr > 0:
+            if curr == self.torso_id:
+                return True
+            curr = self.model.body_parentid[curr]
+        return False
+
     def _publish_robot_state(self):
         now = self._sim_time_msg()
         # Sensor data indices (order defined in MJCF):
@@ -368,8 +378,6 @@ class MuJoCoLidarSimulationNode(Node):
             pass # fallback if custom messages aren't installed
 
         # --- High-Frequency TF Broadcasting (at 200 Hz) ---
-        # Standalone mode only: publish map -> odom -> base_link chain
-        # Navigation mode: FAST-LIO owns map -> base_link directly, so we skip map->odom
         if self.publish_odom_tf:
             t_map = TransformStamped()
             t_map.header.stamp = now
@@ -377,7 +385,6 @@ class MuJoCoLidarSimulationNode(Node):
             t_map.child_frame_id = 'odom'
             t_map.transform.rotation.w = 1.0
             self.tf_broadcaster.sendTransform(t_map)
-
 
         NAME_MAP = {"vision_mount": "camera_link", "lidar_mount": "lidar_link"}
 
@@ -407,13 +414,15 @@ class MuJoCoLidarSimulationNode(Node):
                     self.tf_broadcaster.sendTransform(t_link)
                 continue
 
+            # --- ROBOT ONLY FILTER ---
+            # We only publish the kinematic tree of the robot. 
+            # Environment objects (walls, ground, props) are skipped to keep TF clean.
+            if not self._is_robot_body(i):
+                continue
+
             ros_body_name = NAME_MAP.get(body_name, body_name)
             ros_parent_name = NAME_MAP.get(parent_name, parent_name)
-            # In navigation mode, root frame is map (FAST-LIO: map->base_link).
-            # In standalone mode, root frame is odom (sim: map->odom->base_link).
-            if parent_name == "world" or parent_name is None:
-                ros_parent_name = "map" if not self.publish_odom_tf else "odom"
-
+            
             # World-to-Local conversion via Rotation Matrix (xmat) for limb offsets
             pos_w = self.data.xpos[i] - self.data.xpos[parent_id]
             rot_p = self.data.xmat[parent_id].reshape(3, 3)

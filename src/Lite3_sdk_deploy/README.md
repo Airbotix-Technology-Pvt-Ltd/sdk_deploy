@@ -101,7 +101,7 @@ ros2 run lite3_sdk_deploy rl_deploy
 
 # Terminal 2
 source install/setup.bash
-python3 src/Lite3_sdk_deploy/interface/robot/simulation/mujoco_simulation_ros2.py
+python3 src/Lite3_sdk_deploy/interface/robot/simulation/mujoco_simulation_lidar_ros2.py
 ```
 
 ### Control (Terminal 2)

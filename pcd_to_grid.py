@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 import os
 
-def pcd_to_2d_map(pcd_file, output_prefix="map", resolution=0.05, min_z=0.2, max_z=1.0):
+def pcd_to_2d_map(pcd_file, output_prefix="map/big_area/map", resolution=0.05, min_z=0.2, max_z=1.0):
     print(f"Loading {pcd_file}...")
     
     # Read points directly from the file (faster than complex libs for Fast-LIO output)
@@ -67,7 +67,7 @@ def pcd_to_2d_map(pcd_file, output_prefix="map", resolution=0.05, min_z=0.2, max
     print(f"Map metadata saved to {yaml_file}")
 
 if __name__ == "__main__":
-    pcd_path = "/home/lite3/work/Lite3Robot/Lite3_sdk_deploy/simulation_ascii.pcd"
+    pcd_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "simulation_ascii.pcd")
     if os.path.exists(pcd_path):
         pcd_to_2d_map(pcd_path)
     else:

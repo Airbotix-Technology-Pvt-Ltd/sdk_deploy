@@ -26,12 +26,10 @@ This document provides a detailed technical narrative of the **Lite3 RL & Naviga
 
 ## 🚀 How to Run the Full Stack
 
-This sequence brings up the robot mapping, navigation loop, and locomotion policy in Isaac Sim. Ensure you have loaded `demo3.usd` in Isaac Sim before running these.
-
-**1. Start the Isaac-ROS Bridge:**
+### Simulation (MuJoCo)
+Starts the physics engine and ROS2 bridge for Lidar and IMU.
 ```bash
-source install/setup.bash
-ros2 launch isaac_bridge bridge.launch.py
+python3 ./src/Lite3_sdk_deploy/interface/robot/simulation/mujoco_simulation_lidar_ros2.py --navigation --ros-args -p use_sim_time:=true
 ```
 
 **2. Start the Lite3 RL Locomotion Policy:**
@@ -49,19 +47,14 @@ ros2 launch fast_lio mapping.launch.py use_sim_time:=true config_file:=xt32.yaml
 **4. Start Nav2 Navigation:**
 ```bash
 source install/setup.bash
-ros2 launch nav2_bringup bringup_launch.py \
+ros2 launch launch/lite3_bringup.launch.py \
    use_sim_time:=true \
-   map:=/home/lite3/work/Lite3Robot/Lite3_sdk_deploy/map.yaml \
-   params_file:=/home/lite3/work/Lite3Robot/Lite3_sdk_deploy/nav2_lite3_params.yaml \
+   map:=$(pwd)/map/big_area/map.yaml \
+   params_file:=$(pwd)/config/nav2_lite3_params.yaml \
    use_composition:=False \
    use_respawn:=False
 ```
 
-**5. Start RViz for Nav2 (Optional):**
-```bash
-source install/setup.bash
-ros2 launch nav2_bringup rviz_launch.py
-```
 
 ---
 
@@ -69,64 +62,21 @@ ros2 launch nav2_bringup rviz_launch.py
 
 | Component | Role |
 |-----------|------|
-| **Isaac Sim** | The simulation environment (Worlds, Physics, Sensors). |
+| **MuJoCo** | The simulation environment (Physics, Sensors). |
 | **Lite3 SDK** | The master control platform. Runs the RL policy (`.onnx` model). |
-| **isaac_bridge** | The bi-directional connector between Isaac Sim and the SDK. |
 | **Nav2** | The ROS2 Navigation stack used for autonomous path planning. |
 
----
-
-## 📖 The `isaac_bridge` (High-Fidelity Connector)
-
-### Architecture: Zero-Latency & Sim-Time Synchronized
-Following the [NVIDIA Isaac Sim ROS 2 RL Controller Tutorial](https://docs.isaacsim.omniverse.nvidia.com/5.1.0/ros2_tutorials/tutorial_ros2_rl_controller.html), the bridge is configured as a **Pure Pos/Vel Passthrough**:
-- **Event-Driven Forwarding**: Sensor data is forwarded to the SDK immediately upon receipt from Isaac Sim.
-- **Simulation Time Sync**: Nodes strictly listen to the `/clock` topic (`use_sim_time: True`), ensuring all messages are timestamped consistently with the physics engine.
-
-### Topic Mapping Specification
-| Topic Source (Isaac Sim) | Message Type | drdds Destination | Purpose |
-|--------------------------|--------------|-------------------|---------|
-| `/joint_states` | `sensor_msgs/JointState` | `/JOINTS_DATA` | Servo positions and velocities. |
-| `/imu/data` | `/imu/data` | `/IMU_DATA` | Orientation (RPY), Angular Velocity, and Accel (Gravity=9.8). |
-| `/JOINTS_CMD` | `drdds/JointsDataCmd` | `/joint_commands` | Sending Position/Velocity targets to Isaac. |
 
 ---
 
 ## 📈 Active & Pending Milestone Targets
 
-### **Ongoing (Active Research): Intelligent Navigation**
-- [ ] **Fast-LIO SLAM**: Integrating high-performance 3D LiDAR Odometry and Mapping.
-- [ ] **Nav2 Path Planning**: Configuring the costmap and global planner using the SLAM map.
-- [ ] **P2P Goal Interface**: Connecting Nav2 goals to the RL policy's velocity interface.
-
-### **Pending: Real-World Deployment**
-- [ ] **Hardware Transfer**: Validating the architecture on the physical Lite3 hardware.
+### **Ongoing (Active Research): Real-World Deployment**
+- [ ] **Hardware Transfer**: Transitioning from simulation-trained policies to physical Lite3 hardware.
+- [ ] **Autonomous Navigation Tests**: Validating P2P success in complex indoor environments.
 
 ---
 
-## 🔧 Isaac Sim TF Fix (Nav2 Integration)
-
-### Problem: Broken TF Chain
-Before the fix, the TF chain was incomplete:
-```
-map → odom → base_link    ← BROKEN (stopped here)
-              Lite3 → TORSO → legs  ← floating, not connected
-```
-
-**Root Causes:**
-1. **Wrong prim tracked**: OmniGraph used `Isaac Compute Odometry Node` pointed at `Lite3` — a **container prim** that doesn't move. Physics moves `TORSO` directly.
-2. **Compute Odometry failure**: Failed due to **articulation root mismatch** — the physics root didn't match the configured prim.
-3. **Result**: `odom → base_link` TF was always `(0, 0, 0)`, robot appeared frozen in RViz, Nav2 thought it never moved.
-
-### Fix: World Pose Tracking via Track World Pose node
-Switched to **directly reading the world pose of `TORSO`** using the **Track World Pose node** in Isaac Sim OmniGraph:
-- The **Track World Pose node** is pointed at `TORSO` and publishes its world pose as `odom → base_link`.
-- Isaac Sim's built-in joint TF handles the rest: `base_link → Lite3 → TORSO → legs`.
-
-### Result: Complete TF Chain
-```
-map → odom → base_link → Lite3 → TORSO → legs
-```
 
 ---
 
@@ -151,11 +101,9 @@ By forcing the RL Agent to train against the exact collision triangulation, fric
 ---
 
 ## 💾 Replication & Documentation Reference
-- **Master Simulation File**: [demo3.usd](../src/isaac_bridge/isaacsim/environment/demo3.usd)
+- **Master Simulation File**: [mujoco_simulation_lidar_ros2.py](../src/Lite3_sdk_deploy/interface/robot/simulation/mujoco_simulation_lidar_ros2.py)
 - **SDK Service Guide**: [README_lite3_sdk_service.md](README_lite3_sdk_service.md) (Original DeepRobotics tech specs).
-- **ActionGraphs Gallery**: [isaac_action_graph/](isaac_action_graph/) (Screenshots of simulation wiring).
-- **Frames PDF**: [frames_2026-04-01_16.14.52.pdf](frames_2026-04-01_16.14.52.pdf)
-- **Nav2 Params**: [nav2_lite3_params.yaml](../nav2_lite3_params.yaml)
+- **Nav2 Params**: [nav2_lite3_params.yaml](../config/nav2_lite3_params.yaml)
 
 ---
 
