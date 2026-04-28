@@ -59,6 +59,12 @@ ros2 launch launch/lite3_bringup.launch.py \
    use_respawn:=False
 ```
 
+**5. Start RViz Visualization:**
+```bash
+source install/setup.bash
+ros2 launch nav2_bringup rviz_launch.py use_sim_time:=true
+```
+
 
 ---
 

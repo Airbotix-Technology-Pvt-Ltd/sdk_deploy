@@ -97,6 +97,12 @@ ros2 launch launch/lite3_bringup.launch.py \
   map:=$(pwd)/map/big_area/map.yaml \
   params_file:=$(pwd)/config/nav2_lite3_params.yaml \
   use_sim_time:=true
+
+### 4. Start RViz (Visualization)
+To visualize the map, robot footprint, and path planning:
+```bash
+ros2 launch nav2_bringup rviz_launch.py use_sim_time:=true
+```
 ```
 
 ---
