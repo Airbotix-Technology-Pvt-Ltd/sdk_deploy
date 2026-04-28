@@ -1,5 +1,5 @@
 <mujoco model="Lite3_stair">
     <include file="./Lite3_lidar.xml"/>
-    <include file="./room_env.xml"/>
-    <include file="./stair.xml"/>
+    <include file="./home_env.xml"/>
+    <include file="./balls_clutter.xml"/>
 </mujoco>

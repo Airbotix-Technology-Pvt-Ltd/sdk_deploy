@@ -1,0 +1,71 @@
+<mujoco model="clean_home_environment">
+    <asset>
+        <texture name="skybox" type="skybox" builtin="gradient" rgb1=".3 .5 .7" rgb2="0 0 0" width="512" height="512"/>
+        <texture name="grid" type="2d" builtin="checker" rgb1=".1 .2 .3" rgb2=".2 .3 .4" width="300" height="300" mark="edge" markrgb=".8 .8 .8"/>
+        <material name="grid" texture="grid" texrepeat="1 1" texuniform="true"/>
+    </asset>
+
+    <worldbody>
+        <!-- EXTERIOR WALLS (26x20m) -->
+        <geom name="wall_n" type="box" pos="0 10 0.5" size="13 0.1 0.5" rgba="0.9 0.9 0.9 1"/>
+        <geom name="wall_s" type="box" pos="0 -10 0.5" size="13 0.1 0.5" rgba="0.9 0.9 0.9 1"/>
+        <geom name="wall_e" type="box" pos="13 0 0.5" size="0.1 10 0.5" rgba="0.9 0.9 0.9 1"/>
+        <geom name="wall_w" type="box" pos="-13 0 0.5" size="0.1 10 0.5" rgba="0.9 0.9 0.9 1"/>
+
+        <!-- INTERIOR WALLS WITH GATES -->
+        <geom name="wall_lv_w_1" type="box" pos="-4 -2.5 0.5" size="0.1 1.5 0.5" rgba="0.8 0.8 0.8 1"/>
+        <geom name="wall_lv_w_2" type="box" pos="-4 2.5 0.5" size="0.1 1.5 0.5" rgba="0.8 0.8 0.8 1"/>
+        <geom name="wall_lv_e_1" type="box" pos="4 -2.5 0.5" size="0.1 1.5 0.5" rgba="0.8 0.8 0.8 1"/>
+        <geom name="wall_lv_e_2" type="box" pos="4 2.5 0.5" size="0.1 1.5 0.5" rgba="0.8 0.8 0.8 1"/>
+        <geom name="wall_lv_n_1" type="box" pos="-2.5 4 0.5" size="1.5 0.1 0.5" rgba="0.8 0.8 0.8 1"/>
+        <geom name="wall_lv_n_2" type="box" pos="2.5 4 0.5" size="1.5 0.1 0.5" rgba="0.8 0.8 0.8 1"/>
+        <geom name="wall_lv_s_1" type="box" pos="-2.5 -4 0.5" size="1.5 0.1 0.5" rgba="0.8 0.8 0.8 1"/>
+        <geom name="wall_lv_s_2" type="box" pos="2.5 -4 0.5" size="1.5 0.1 0.5" rgba="0.8 0.8 0.8 1"/>
+
+        <geom name="wall_kit_h" type="box" pos="-8.5 4 0.5" size="4.5 0.1 0.5" rgba="0.8 0.8 0.8 1"/>
+        <geom name="wall_lib_h" type="box" pos="8.5 4 0.5" size="4.5 0.1 0.5" rgba="0.8 0.8 0.8 1"/>
+        <geom name="wall_gym_h" type="box" pos="8.5 -4 0.5" size="4.5 0.1 0.5" rgba="0.8 0.8 0.8 1"/>
+        <geom name="wall_master_h" type="box" pos="-8.5 -4 0.5" size="4.5 0.1 0.5" rgba="0.8 0.8 0.8 1"/>
+
+        <!-- ================================================================= -->
+        <!-- CLEAN ARRANGEMENT OF FURNITURE -->
+        <!-- ================================================================= -->
+
+        <!-- 1. LIVING ROOM -->
+        <body name="sofa" pos="-2 0 0.2"><geom type="box" size="0.4 1.2 0.2" rgba="0.2 0.3 0.5 1"/></body>
+        <body name="lv_table" pos="2 2 0.15"><geom type="box" size="0.6 0.4 0.15" rgba="0.5 0.3 0.1 1"/></body>
+
+        <!-- 2. KITCHEN (Top-Left) -->
+        <body name="island" pos="-7 7 0.4"><geom type="box" size="1.2 0.6 0.4" rgba="0.9 0.9 0.9 1"/></body>
+        <body name="kitchen_counter" pos="-12 9 0.45"><geom type="box" size="0.8 1.0 0.45" rgba="0.8 0.8 0.8 1"/></body>
+
+        <!-- 3. DINING ROOM (Top-Right) -->
+        <body name="dining_table" pos="7 7 0.35"><geom type="box" size="1.5 0.8 0.35" rgba="0.4 0.25 0.15 1"/></body>
+        <body name="chair_d1" pos="5.5 7.5 0.2"><geom type="box" size="0.2 0.2 0.2" rgba="0.1 0.1 0.1 1"/></body>
+        <body name="chair_d2" pos="5.5 6.5 0.2"><geom type="box" size="0.2 0.2 0.2" rgba="0.1 0.1 0.1 1"/></body>
+
+        <!-- 4. MASTER BEDROOM (West) -->
+        <body name="bed_m" pos="-10 0 0.25"><geom type="box" size="1.4 1.0 0.25" rgba="0.3 0.3 0.6 1"/></body>
+        <body name="almirah_m" pos="-12 2 0.9"><geom type="box" size="0.4 0.8 0.9" rgba="0.4 0.2 0.1 1"/></body>
+
+        <!-- 5. GUEST BEDROOM (East) -->
+        <body name="bed_g" pos="10 0 0.25"><geom type="box" size="1.2 0.8 0.25" rgba="0.6 0.3 0.3 1"/></body>
+        <body name="almirah_g" pos="12 2 0.9"><geom type="box" size="0.4 0.8 0.9" rgba="0.4 0.2 0.1 1"/></body>
+
+        <!-- 6. LIBRARY (North-East) -->
+        <body name="shelf_1" pos="11 8 0.9"><geom type="box" size="1.5 0.2 0.9" rgba="0.3 0.2 0.1 1"/></body>
+        <body name="study_desk" pos="9 9 0.35"><geom type="box" size="0.8 0.4 0.35" rgba="0.5 0.3 0.2 1"/></body>
+
+        <!-- 7. GARAGE (South-West) -->
+        <body name="car_1" pos="-8 -7 0.5"><geom type="box" size="1.8 0.9 0.5" rgba="0.1 0.1 0.8 1"/></body>
+        <body name="bike_1" pos="-11 -7 0.4"><geom type="box" size="0.6 0.2 0.4" rgba="0.8 0.1 0.1 1"/></body>
+        <body name="bike_2" pos="-11 -8 0.4"><geom type="box" size="0.6 0.2 0.4" rgba="0.8 0.1 0.1 1"/></body>
+
+        <!-- 8. GYM / STORAGE (South-East) -->
+        <body name="treadmill" pos="10 -8 0.1"><geom type="box" size="0.8 0.4 0.1" rgba="0.1 0.1 0.1 1"/></body>
+        <body name="storage_box" pos="7 -7 0.2"><geom type="box" size="0.4 0.4 0.2" rgba="0.8 0.8 0.8 1"/></body>
+
+
+
+    </worldbody>
+</mujoco>

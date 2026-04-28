@@ -1,0 +1,14 @@
+<mujoco model="balls_clutter">
+    <worldbody>
+        <body name="extra_ball_0" pos="1.0 1.0 0.12"><joint type="free"/><geom type="sphere" size="0.12" rgba="1 0.5 0 1" friction="1 .05 .01"/></body>
+        <body name="extra_ball_1" pos="2.0 2.0 0.12"><joint type="free"/><geom type="sphere" size="0.12" rgba="1 0.5 0 1" friction="1 .05 .01"/></body>
+        <body name="extra_ball_2" pos="3.0 3.0 0.12"><joint type="free"/><geom type="sphere" size="0.12" rgba="1 0.5 0 1" friction="1 .05 .01"/></body>
+        <body name="extra_ball_3" pos="4.0 4.0 0.12"><joint type="free"/><geom type="sphere" size="0.12" rgba="1 0.5 0 1" friction="1 .05 .01"/></body>
+        <body name="extra_ball_4" pos="-1.0 -1.0 0.12"><joint type="free"/><geom type="sphere" size="0.12" rgba="1 0.5 0 1" friction="1 .05 .01"/></body>
+        <body name="extra_ball_5" pos="-2.0 -2.0 0.12"><joint type="free"/><geom type="sphere" size="0.12" rgba="1 0.5 0 1" friction="1 .05 .01"/></body>
+        <body name="extra_ball_6" pos="-3.0 -3.0 0.12"><joint type="free"/><geom type="sphere" size="0.12" rgba="1 0.5 0 1" friction="1 .05 .01"/></body>
+        <body name="extra_ball_7" pos="-4.0 -4.0 0.12"><joint type="free"/><geom type="sphere" size="0.12" rgba="1 0.5 0 1" friction="1 .05 .01"/></body>
+        <body name="extra_ball_8" pos="5.0 -5.0 0.12"><joint type="free"/><geom type="sphere" size="0.12" rgba="1 0.5 0 1" friction="1 .05 .01"/></body>
+        <body name="extra_ball_9" pos="-5.0 5.0 0.12"><joint type="free"/><geom type="sphere" size="0.12" rgba="1 0.5 0 1" friction="1 .05 .01"/></body>
+    </worldbody>
+</mujoco>
