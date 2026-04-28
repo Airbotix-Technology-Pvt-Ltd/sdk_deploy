@@ -368,13 +368,16 @@ class MuJoCoLidarSimulationNode(Node):
             pass # fallback if custom messages aren't installed
 
         # --- High-Frequency TF Broadcasting (at 200 Hz) ---
-        # 1. map -> odom (static identity)
-        t_map = TransformStamped()
-        t_map.header.stamp = now
-        t_map.header.frame_id = 'map'
-        t_map.child_frame_id = 'odom'
-        t_map.transform.rotation.w = 1.0
-        self.tf_broadcaster.sendTransform(t_map)
+        # Standalone mode only: publish map -> odom -> base_link chain
+        # Navigation mode: FAST-LIO owns map -> base_link directly, so we skip map->odom
+        if self.publish_odom_tf:
+            t_map = TransformStamped()
+            t_map.header.stamp = now
+            t_map.header.frame_id = 'map'
+            t_map.child_frame_id = 'odom'
+            t_map.transform.rotation.w = 1.0
+            self.tf_broadcaster.sendTransform(t_map)
+
 
         NAME_MAP = {"vision_mount": "camera_link", "lidar_mount": "lidar_link"}
 
@@ -406,7 +409,10 @@ class MuJoCoLidarSimulationNode(Node):
 
             ros_body_name = NAME_MAP.get(body_name, body_name)
             ros_parent_name = NAME_MAP.get(parent_name, parent_name)
-            if parent_name == "world" or parent_name is None: ros_parent_name = "odom"
+            # In navigation mode, root frame is map (FAST-LIO: map->base_link).
+            # In standalone mode, root frame is odom (sim: map->odom->base_link).
+            if parent_name == "world" or parent_name is None:
+                ros_parent_name = "map" if not self.publish_odom_tf else "odom"
 
             # World-to-Local conversion via Rotation Matrix (xmat) for limb offsets
             pos_w = self.data.xpos[i] - self.data.xpos[parent_id]

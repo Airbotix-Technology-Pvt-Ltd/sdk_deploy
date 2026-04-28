@@ -71,7 +71,7 @@
       scan_bodyframe_pub_en: false
 
       child_frame_id: "base_link"    # FAST-LIO odom child frame
-      parent_frame_id: "odom"        # FAST-LIO odom parent frame (map -> odom identity in bridge)
+      parent_frame_id: "map"        # FAST-LIO odom parent frame (map -> odom identity in bridge)
 
     # -----------------------
     # Map Saving
