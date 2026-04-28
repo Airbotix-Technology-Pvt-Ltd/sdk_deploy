@@ -58,6 +58,15 @@ ros2 launch launch/lite3_bringup.launch.py \
    use_composition:=False \
    use_respawn:=False
 ```
+```bash
+source install/setup.bash
+ros2 launch launch/lite3_bringup.launch.py \
+   use_sim_time:=true \
+   map:=$(pwd)/map/small_area/map.yaml \
+   params_file:=$(pwd)/config/nav2_lite3_params.yaml \
+   use_composition:=False \
+   use_respawn:=False
+```
 
 **5. Start RViz Visualization:**
 ```bash
