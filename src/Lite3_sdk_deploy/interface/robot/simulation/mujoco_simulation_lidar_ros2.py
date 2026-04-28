@@ -68,8 +68,8 @@ except ImportError:
 MODEL_NAME = "Lite3"
 CURRENT_DIR = Path(__file__).resolve().parent
 
-XML_PATH = CURRENT_DIR / ".." / ".." / ".." / "Lite3_description" / "lite3_mjcf" / "mjcf" / "Lite3_stair_lidar.xml"
-XML_PATH = str(XML_PATH.resolve())
+XML_PATH_BIG = CURRENT_DIR / ".." / ".." / ".." / "Lite3_description" / "lite3_mjcf" / "mjcf" / "Lite3_big_house.xml"
+XML_PATH_SMALL = CURRENT_DIR / ".." / ".." / ".." / "Lite3_description" / "lite3_mjcf" / "mjcf" / "Lite3_small_room.xml"
 
 USE_VIEWER = True
 DT = 0.001
@@ -109,7 +109,7 @@ def _make_backend_args(body_id: int) -> dict:
 
 
 class MuJoCoLidarSimulationNode(Node):
-    def __init__(self, model_key: str = MODEL_NAME, xml_path: str = str(XML_PATH),
+    def __init__(self, model_key: str = MODEL_NAME, xml_path: str = None,
                  publish_odom_tf: bool = True):
         super().__init__('mujoco_lidar_simulation')
 
@@ -524,6 +524,13 @@ if __name__ == "__main__":
         epilog="ROS2 args (--ros-args ...) are forwarded to rclpy and ignored here."
     )
     parser.add_argument(
+        "--env",
+        type=str,
+        choices=["big", "small"],
+        default="big",
+        help="Choose environment: 'big' (Lite3_big_house.xml) or 'small' (Lite3_small_room.xml)."
+    )
+    parser.add_argument(
         "--navigation",
         action="store_true",
         default=False,
@@ -533,8 +540,13 @@ if __name__ == "__main__":
     # Parse only our args; leave ROS args for rclpy
     args, ros_args = parser.parse_known_args()
 
+    xml_to_load = str(XML_PATH_BIG.resolve()) if args.env == "big" else str(XML_PATH_SMALL.resolve())
+
     rclpy.init(args=ros_args)
-    node = MuJoCoLidarSimulationNode(publish_odom_tf=not args.navigation)
+    node = MuJoCoLidarSimulationNode(
+        xml_path=xml_to_load,
+        publish_odom_tf=not args.navigation
+    )
     try:
         node.start()
     except KeyboardInterrupt:

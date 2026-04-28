@@ -1,0 +1,4 @@
+<mujoco model="Lite3_big_house">
+    <include file="./Lite3_lidar.xml"/>
+    <include file="./home_env.xml"/>
+</mujoco>

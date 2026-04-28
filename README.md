@@ -34,8 +34,6 @@ To reproduce our high-fidelity SLAM results, ensure the following specialized Te
 
 ## 🛠️ Workspace Components
 
-### **1. `isaac_bridge` (NVIDIA Isaac Sim Integration)**
-The heart of our simulation infrastructure. Re-engineered as a zero-latency hub synchronized to the simulation `/clock`, ensuring stable locomotion and PD alignment between training and deployment.
 
 ### **2. `lite_transfer` (Hardware Bridging)**
 The C++ communication layer between simulation-trained policies and physical hardware, using the deep-rooted M20/Lite3 UDP protocols.
@@ -79,7 +77,11 @@ Follow these steps to launch the full Lite3 navigation stack (FAST-LIO + Nav2) i
 ### 1. Launch the Simulation (MuJoCo)
 Starts the physics engine and ROS2 bridge for Lidar and IMU.
 ```bash
-python3 ./src/Lite3_sdk_deploy/interface/robot/simulation/mujoco_simulation_lidar_ros2.py --navigation --ros-args -p use_sim_time:=true
+# Full House environment (Big)
+python3 ./src/Lite3_sdk_deploy/interface/robot/simulation/mujoco_simulation_lidar_ros2.py --env big --navigation
+
+# Room environment (Small)
+python3 ./src/Lite3_sdk_deploy/interface/robot/simulation/mujoco_simulation_lidar_ros2.py --env small --navigation
 ```
 
 ### 2. Start SLAM (FAST-LIO)

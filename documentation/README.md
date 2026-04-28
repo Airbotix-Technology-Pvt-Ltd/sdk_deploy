@@ -29,7 +29,11 @@ This document provides a detailed technical narrative of the **Lite3 RL & Naviga
 ### Simulation (MuJoCo)
 Starts the physics engine and ROS2 bridge for Lidar and IMU.
 ```bash
-python3 ./src/Lite3_sdk_deploy/interface/robot/simulation/mujoco_simulation_lidar_ros2.py --navigation --ros-args -p use_sim_time:=true
+# Complex House environment (High-fidelity)
+python3 ./src/Lite3_sdk_deploy/interface/robot/simulation/mujoco_simulation_lidar_ros2.py --env big --navigation
+
+# Small Room environment (Performance mode)
+python3 ./src/Lite3_sdk_deploy/interface/robot/simulation/mujoco_simulation_lidar_ros2.py --env small --navigation
 ```
 
 **2. Start the Lite3 RL Locomotion Policy:**
