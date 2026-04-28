@@ -51,7 +51,28 @@ Generated a high-fidelity **2D Occupancy Grid Map** (`map.pgm`/`map.yaml`) for N
 
 ---
 
-## 🚀 Running Navigation (Home Simulation)
+## 🚀 Navigation & SLAM Architecture
+
+### 1. TF & Odometry Logic
+Our system uses a dual-mode strategy to ensure clean TF trees:
+- **Mapping Mode**: Run MuJoCo **without** the `--navigation` flag. The simulation will publish the `odom -> base_link` ground truth transform for raw mapping.
+- **Navigation Mode**: Run MuJoCo **with** the `--navigation` flag. This **suppresses** the internal simulation TF, allowing **FAST-LIO** to own the `map -> odom -> base_link` transform. This prevents "dual-authority" jitter in the TF tree.
+
+### 2. Sensor Pipeline
+- **FAST-LIO Integration**: We use FAST-LIO for high-fidelity 3D odometry.
+- **Pointcloud to Scan**: Added a `pointcloud_to_laserscan` node within the FAST-LIO launch to project 360° 3D data into a 2D `/scan` topic, which Nav2 uses for global/local costmap obstacle avoidance.
+
+### 3. Controller Server (Smooth Motion)
+We have shifted from the default DWB controller to **Regulated Pure Pursuit (RPP)**. This provides significantly smoother, "curvy" paths that are better suited for the quadruped's gait compared to the jerky movements of DWA/DWB.
+
+### 4. Footprint & Self-Hit Avoidance
+To prevent the robot from considering its own chassis as an obstacle:
+- **Footprint Clearing**: Enabled `footprint_clearing_enabled: True` in both global and local costmaps.
+- **Chassis Masking**: The robot's rectangular footprint `[[0.225, 0.14], ...]` is strictly defined to mask the Lidar's "blind zone," ensuring zero false-positive collisions from the robot's own body.
+
+---
+
+## 💻 Running Navigation (Home Simulation)
 
 Follow these steps to launch the full Lite3 navigation stack (FAST-LIO + Nav2) in the multi-room home environment.
 
