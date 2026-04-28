@@ -51,8 +51,30 @@ Generated a high-fidelity **2D Occupancy Grid Map** (`map.pgm`/`map.yaml`) for N
 
 ---
 
-## 📖 Quick Reference
-For detailed replication steps, simulation ActionGraphs, and hardware manuals, please refer to the centralized [**Technical Library**](../documentation/README.md).
+## 🚀 Running Navigation (Home Simulation)
+
+Follow these steps to launch the full Lite3 navigation stack (FAST-LIO + Nav2) in the multi-room home environment.
+
+### 1. Launch the Simulation (MuJoCo)
+Starts the physics engine and ROS2 bridge for Lidar and IMU.
+```bash
+python3 src/Lite3_sdk_deploy/interface/robot/simulation/mujoco_simulation_lidar_ros2.py --navigation --ros-args -p use_sim_time:=true
+```
+
+### 2. Start SLAM (FAST-LIO)
+Provides high-fidelity odometry and mapping (`map -> odom`).
+```bash
+ros2 launch fast_lio mapping.launch.py config_file:=xt32.yaml rviz:=false use_sim_time:=true
+```
+
+### 3. Start Navigation (Nav2)
+Starts the path planning and controller stack using our **custom mission file** which excludes AMCL to avoid conflicts with FAST-LIO.
+```bash
+ros2 launch launch/lite3_bringup.launch.py \
+  map:=$(pwd)/map.yaml \
+  params_file:=$(pwd)/nav2_lite3_params.yaml \
+  use_sim_time:=true
+```
 
 ---
 *Airbotix Technology Pvt Ltd - Lite3 P2P Autonomous Navigation Project*
