@@ -90,7 +90,7 @@
       transform_tolerance: 0.1
 
       # ✅ FIXED HEIGHT FILTER
-      min_height: -0.2
+      min_height: 0.0
       max_height: 0.5
 
       # ✅ FULL SCAN
@@ -101,7 +101,7 @@
       scan_time: 0.1
 
       # ✅ RANGE
-      range_min: 0.1
+      range_min: 0.35  # Excludes robot body self-hits (body extends ~0.25m from LiDAR)
       range_max: 20.0
 
       use_inf: true
