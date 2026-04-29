@@ -26,7 +26,8 @@ from std_msgs.msg import Header
 from rosgraph_msgs.msg import Clock
 from sensor_msgs.msg import Image, CameraInfo, PointCloud2, PointField, Imu
 from sensor_msgs_py import point_cloud2
-from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import TransformStamped, Pose, Twist
+from nav_msgs.msg import Odometry
 import tf2_ros
 
 def _quat_mul(q1, q2):
@@ -163,6 +164,12 @@ class MuJoCoLidarSimulationNode(Node):
         # Custom Lite3 publishers
         self.imu_pub    = self.create_publisher(ImuData,    '/IMU_DATA',    qos_profile)
         self.joints_pub = self.create_publisher(JointsData, '/JOINTS_DATA', qos_profile)
+
+        # Standard Odometry publisher
+        # In navigation mode (FAST-LIO active), we publish to /ground_truth/odom
+        # to avoid conflicting with the SLAM odometry on /odom.
+        odom_topic = '/odom' if self.publish_odom_tf else '/ground_truth/odom'
+        self.odom_pub = self.create_publisher(Odometry, odom_topic, qos_profile)
 
         # Lidar/Camera Publishers
         self.pc_pub    = self.create_publisher(PointCloud2, 'lidar_points',               10)
@@ -349,6 +356,36 @@ class MuJoCoLidarSimulationNode(Node):
         imu_std.orientation_covariance[0] = -1.0
         self.imu_std_pub.publish(imu_std)
 
+        # --- nav_msgs/Odometry on /odom (Ground Truth for Nav2) ---
+        # Note: If running FAST-LIO2, you may want to remap this or the FAST-LIO output
+        # to avoid topic naming conflicts.
+        odom_msg = Odometry()
+        odom_msg.header.stamp = now
+        odom_msg.header.frame_id = 'odom'
+        odom_msg.child_frame_id = 'base_link'
+
+        # Pose (Ground Truth from MuJoCo)
+        odom_msg.pose.pose.position.x = float(self.data.qpos[0])
+        odom_msg.pose.pose.position.y = float(self.data.qpos[1])
+        odom_msg.pose.pose.position.z = float(self.data.qpos[2])
+        odom_msg.pose.pose.orientation.w = float(self.data.qpos[3])
+        odom_msg.pose.pose.orientation.x = float(self.data.qpos[4])
+        odom_msg.pose.pose.orientation.y = float(self.data.qpos[5])
+        odom_msg.pose.pose.orientation.z = float(self.data.qpos[6])
+
+        # Twist (Body Frame velocity from sensors)
+        # indices 13-16: velocimeter (linear velocity in body frame)
+        # indices 19-22: gyro (angular velocity in body frame)
+        if len(self.data.sensordata) >= 22:
+            odom_msg.twist.twist.linear.x = float(self.data.sensordata[13])
+            odom_msg.twist.twist.linear.y = float(self.data.sensordata[14])
+            odom_msg.twist.twist.linear.z = float(self.data.sensordata[15])
+            odom_msg.twist.twist.angular.x = float(self.data.sensordata[19])
+            odom_msg.twist.twist.angular.y = float(self.data.sensordata[20])
+            odom_msg.twist.twist.angular.z = float(self.data.sensordata[21])
+        
+        self.odom_pub.publish(odom_msg)
+
         # --- Custom Lite3 SDK messages (for controller compatibility) ---
         try:
             imu_msg = ImuData()
@@ -378,13 +415,20 @@ class MuJoCoLidarSimulationNode(Node):
             pass # fallback if custom messages aren't installed
 
         # --- High-Frequency TF Broadcasting (at 200 Hz) ---
+        # 1. map -> odom (Static Identity)
+        # We always publish this so the TF tree has a valid root for Nav2,
+        # even if ground-truth odometry is suppressed.
+        t_map = TransformStamped()
+        t_map.header.stamp = now
+        t_map.header.frame_id = 'map'
+        t_map.child_frame_id = 'odom'
+        t_map.transform.rotation.w = 1.0
+        self.tf_broadcaster.sendTransform(t_map)
+
         if self.publish_odom_tf:
-            t_map = TransformStamped()
-            t_map.header.stamp = now
-            t_map.header.frame_id = 'map'
-            t_map.child_frame_id = 'odom'
-            t_map.transform.rotation.w = 1.0
-            self.tf_broadcaster.sendTransform(t_map)
+            # 2. odom -> base_link (Ground Truth)
+            # Only published when not in navigation mode.
+            pass
 
         NAME_MAP = {"vision_mount": "camera_link", "lidar_mount": "lidar_link"}
 
