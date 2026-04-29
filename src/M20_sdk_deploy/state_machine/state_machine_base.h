@@ -13,8 +13,6 @@
 
 #include "state_base.h"
 #include "safe_controller.hpp"
-#include "drdds/msg/std_msg_int32.hpp"
-#include "topic_trace.hpp"
 
 class TimeTool {
 private:
@@ -126,19 +124,10 @@ public:
 
                 current_controller_->Run();
 
-                if (emergency_stop_requested_.exchange(false)) {
-                    {
-                        char buf[128];
-                        snprintf(buf, sizeof(buf),
-                            "Executing: current_state='%s' -> kJointDamping (run_cnt=%d)",
-                            current_controller_->state_name_.c_str(), run_cnt_);
-                        topic_trace::LogEstopEvent(ri_ptr_->get_node()->get_logger(), "[ESTOP]", buf);
-                    }
-                    uc_ptr_->GetUserCommand()->target_mode = uint8_t(RobotMotionState::JointDamping);
+                if (current_controller_->LoseControlJudge()){
                     next_state_name_ = StateName::kJointDamping;
-                } else if (current_controller_->LoseControlJudge()) {
-                    next_state_name_ = StateName::kJointDamping;
-                } else {
+                } 
+                else {
                     next_state_name_ = current_controller_->GetNextStateName();
                 }
 
@@ -174,38 +163,5 @@ public:
     StateName current_state_name_, next_state_name_;
 
     std::thread run_thread_;
-
-    // 急停信号：由 lite3_transfer 进程发布 /EMERGENCY_STOP_SIGNAL 触发
-    std::atomic<bool> emergency_stop_requested_{false};
-    rclcpp::Subscription<drdds::msg::StdMsgInt32>::SharedPtr estop_signal_sub_;
-
-    // 在 ri_ptr_ 初始化后调用，订阅跨进程急停信号
-    void InitEmergencyStopListener() {
-        {
-            char buf[128];
-            snprintf(buf, sizeof(buf),
-                "Subscribing to /EMERGENCY_STOP_SIGNAL on node '%s'",
-                ri_ptr_->get_node()->get_name());
-            topic_trace::LogEstopEvent(ri_ptr_->get_node()->get_logger(), "[ESTOP]", buf);
-        }
-        estop_signal_sub_ = ri_ptr_->get_node()->create_subscription<drdds::msg::StdMsgInt32>(
-            "/EMERGENCY_STOP_SIGNAL", 1,
-            [this](const drdds::msg::StdMsgInt32::SharedPtr msg) {
-                char buf[256];
-                snprintf(buf, sizeof(buf),
-                    "Received /EMERGENCY_STOP_SIGNAL value=%d, "
-                    "current_state='%s', run_cnt=%d",
-                    msg->value,
-                    current_controller_ ? current_controller_->state_name_.c_str() : "nullptr",
-                    run_cnt_);
-                topic_trace::LogEstopEvent(ri_ptr_->get_node()->get_logger(), "[ESTOP][4/4]", buf);
-                emergency_stop_requested_.store(true);
-                topic_trace::LogEstopEvent(ri_ptr_->get_node()->get_logger(), "[ESTOP][4/4]",
-                    "emergency_stop_requested_ set to true");
-            }
-        );
-        topic_trace::LogEstopEvent(ri_ptr_->get_node()->get_logger(), "[ESTOP]",
-            "/EMERGENCY_STOP_SIGNAL subscription created");
-    }
 };
 

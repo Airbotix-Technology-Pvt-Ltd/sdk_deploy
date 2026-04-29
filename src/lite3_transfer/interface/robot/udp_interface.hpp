@@ -4,9 +4,9 @@
  * @author Haokai Dai
  * @version 1.0
  * @date 2025-12-25
- * 
+ *
  * @copyright Copyright (c) 2024  DeepRobotics
- * 
+ *
  */
 #pragma once
 
@@ -14,6 +14,7 @@
 #include "drdds/msg/joints_data.hpp"
 #include "drdds/msg/joints_data_cmd.hpp"
 #include "drdds/msg/imu_data.hpp"
+#include "drdds/msg/std_msg_int32.hpp"
 #include "drdds/srv/std_srv_int32.hpp"
 #include "robot_interface.h"
 #include "robot_types.h"
@@ -25,6 +26,8 @@
 #include <mutex>
 #include <array>
 #include <chrono>
+
+#include "topic_trace.hpp"
 
 // using namespace lite3;
 
@@ -48,23 +51,44 @@ private:
         "HL_HipX", "HL_HipY", "HL_Knee",
         "HR_HipX", "HR_HipY", "HR_Knee"
     };
-    
+
     rclcpp::Subscription<drdds::msg::JointsDataCmd>::SharedPtr joint_cmd_sub_;
     rclcpp::Publisher<drdds::msg::JointsData>::SharedPtr joint_data_pub_;
     rclcpp::Publisher<drdds::msg::ImuData>::SharedPtr imu_data_pub_;
+    // 急停信号发布者：通知 Lite3_sdk_deploy 进程切换至 JointDamping 状态
+    rclcpp::Publisher<drdds::msg::StdMsgInt32>::SharedPtr estop_signal_pub_;
     rclcpp::TimerBase::SharedPtr publish_timer_;
     rclcpp::TimerBase::SharedPtr cmd_timer_;  // 1000Hz 定时器用于发送 UDP 命令
     rclcpp::Service<drdds::srv::StdSrvInt32>::SharedPtr set_rate_service_;
+    rclcpp::Service<drdds::srv::StdSrvInt32>::SharedPtr emergency_stop_service_;
     std::mutex rate_mutex_;  // 保护 publish_rate_ 和 timer 的线程安全
     std::mutex cmd_mutex_;   // 保护 robot_joint_cmd_ 的线程安全
+    uint64_t joints_data_pub_seq_{0};
+    topic_trace::TraceState joints_data_pub_trace_;
+    topic_trace::TraceState joints_cmd_sub_trace_;
 
-    // Service callback 函数
+    // /EMERGENCY_STOP service callback
+    void EmergencyStopCallback(
+        const std::shared_ptr<drdds::srv::StdSrvInt32::Request> request,
+        std::shared_ptr<drdds::srv::StdSrvInt32::Response> response)
+    {
+        char buf[256];
+        snprintf(buf, sizeof(buf),
+            "/EMERGENCY_STOP service called: cmd=%d, /EMERGENCY_STOP_SIGNAL subscriber_count=%zu",
+            request->command, estop_signal_pub_->get_subscription_count());
+        topic_trace::LogEstopEvent(get_logger(), "[ESTOP][1/4]", buf);
+        EmergencyStop();
+        response->result = 0;
+        topic_trace::LogEstopEvent(get_logger(), "[ESTOP][1/4]", "Service response sent: result=0");
+    }
+
+    // /SDK_MODE service callback
     void SetPublishRateCallback(
         const std::shared_ptr<drdds::srv::StdSrvInt32::Request> request,
         std::shared_ptr<drdds::srv::StdSrvInt32::Response> response)
     {
         int32_t command = request->command;
-        
+
         // 如果输入频率为0，则调用Stop退出SDK模式切换至robot模式
         if (command == 0) {
             RCLCPP_INFO(get_logger(), "Command 0 received: Exiting SDK mode, switching to Robot mode");
@@ -72,26 +96,26 @@ private:
             response->result = 0;  // 成功
             return;
         }
-        
+
         // 判断输入数值：必须小于等于200且为1000的因数
         if (command < 0 || command > 200 || 1000 % command != 0) {
-            RCLCPP_WARN(get_logger(), 
+            RCLCPP_WARN(get_logger(),
                 "Invalid publish rate: %d Hz. The value must be less than or equal to 200 and a divisor of 1000. "
-                "Valid values: 1, 2, 4, 5, 8, 10, 20, 25, 40, 50, 100, 125, 200", 
+                "Valid values: 1, 2, 4, 5, 8, 10, 20, 25, 40, 50, 100, 125, 200",
                 command);
             response->result = -1;  // 失败
             return;
         }
-        
+
         {
             std::lock_guard<std::mutex> lock(rate_mutex_);
             publish_rate_ = static_cast<double>(command);
-            
+
             // 取消旧的 timer
             if (publish_timer_) {
                 publish_timer_->cancel();
             }
-            
+
             // 创建新的 timer 使用新的频率
             using namespace std::chrono_literals;
             auto period = std::chrono::duration<double>(1.0 / publish_rate_);
@@ -103,7 +127,7 @@ private:
                 }
             );
         }
-        
+
         RCLCPP_INFO(get_logger(), "Publish rate set to %d Hz", command);
         response->result = 0;  // 成功
     }
@@ -111,8 +135,9 @@ private:
 public:
     // 将频率设置放到public中，可供外部查看频率
     double publish_rate_ = 200;
-    HardwareInterface(const std::string& robot_name, 
-                        int local_port=43897, 
+
+    HardwareInterface(const std::string& robot_name,
+                        int local_port=43897,
                         std::string robot_ip="192.168.2.1",
                         int robot_port=43893):RobotInterface(robot_name, 12)
                         ,rclcpp::Node(robot_name){
@@ -122,33 +147,39 @@ public:
         sender_ = new Sender(robot_ip, robot_port);
         sender_->RobotStateInit();
 
-        joint_data_pub_ = create_publisher<drdds::msg::JointsData>("/JOINTS_DATA", 10);
-        imu_data_pub_ = create_publisher<drdds::msg::ImuData>("/IMU_DATA", 10);
+        joint_data_pub_   = create_publisher<drdds::msg::JointsData>("/JOINTS_DATA", 10);
+        imu_data_pub_     = create_publisher<drdds::msg::ImuData>("/IMU_DATA", 10);
+        estop_signal_pub_ = create_publisher<drdds::msg::StdMsgInt32>("/EMERGENCY_STOP_SIGNAL", 1);
         joint_cmd_sub_ = create_subscription<drdds::msg::JointsDataCmd>("/JOINTS_CMD", 10,
                         std::bind(&HardwareInterface::SetJointCommand, this, std::placeholders::_1));
-        
+
         // 创建 service server
         set_rate_service_ = create_service<drdds::srv::StdSrvInt32>(
             "/SDK_MODE",
             std::bind(&HardwareInterface::SetPublishRateCallback, this,
                      std::placeholders::_1, std::placeholders::_2));
-        
+
+        emergency_stop_service_ = create_service<drdds::srv::StdSrvInt32>(
+            "/EMERGENCY_STOP",
+            std::bind(&HardwareInterface::EmergencyStopCallback, this,
+                     std::placeholders::_1, std::placeholders::_2));
+
         RCLCPP_INFO(get_logger(), "ROS2 interfaces initialized");
-        RCLCPP_INFO(get_logger(), "  Publishing: /JOINTS_DATA, /IMU_DATA");
+        RCLCPP_INFO(get_logger(), "  Publishing: /JOINTS_DATA, /IMU_DATA, /EMERGENCY_STOP_SIGNAL");
         RCLCPP_INFO(get_logger(), "  Subscribing: /JOINTS_CMD");
         RCLCPP_INFO(get_logger(), "  Service: /SDK_MODE (set publish rate, 0 to exit SDK mode)");
+        RCLCPP_INFO(get_logger(), "  Service: /EMERGENCY_STOP (send 0x21010C0E to robot, notify state machine)");
 
         using namespace std::chrono_literals;
-        auto period = std::chrono::duration<double>(1.0 / publish_rate_);  // 1/1000 s
+        auto period = std::chrono::duration<double>(1.0 / publish_rate_);
         publish_timer_ = this->create_wall_timer(
             std::chrono::duration_cast<std::chrono::milliseconds>(period),
             [this]() {
-                // 每个周期同时发布关节和 IMU
                 this->PublishJointData();
                 this->PublishImuData();
             }
         );
-        
+
         // 创建 1000Hz 定时器用于发送 UDP 命令
         // 每次收到 ROS 消息（200Hz）时，会通过这个定时器发送 5 次 UDP 消息（1000Hz）
         constexpr double cmd_send_rate = 1000.0;  // 1000 Hz
@@ -161,14 +192,14 @@ public:
         );
         RCLCPP_INFO(get_logger(), "UDP command send timer initialized at %.0f Hz", cmd_send_rate);
 
-    }   
+    }
     ~HardwareInterface(){
         Stop();
     }
 
     virtual void Start(){
         // RCLCPP_INFO(get_logger(), "  Starting receiver");
-        receiver_->StartWork();                        
+        receiver_->StartWork();
         robot_data_ = &(receiver_->GetState());
         if (sender_ != nullptr)
             sender_->ControlGet(2); ///< SDK mode
@@ -178,6 +209,37 @@ public:
         if(sender_ != nullptr){
             sender_->ControlGet(1); ///< Robot mode
         }
+    }
+
+    virtual void EmergencyStop(){
+        // 2. 硬件层：向机器人固件发送原始急停命令码
+        if (sender_ != nullptr) {
+            topic_trace::LogEstopEvent(get_logger(), "[ESTOP][2/4]",
+                "Sending cmd=0x21010C0E to robot firmware via UDP");
+            sender_->SetCmd(0x21010C0E, 0);
+            topic_trace::LogEstopEvent(get_logger(), "[ESTOP][2/4]", "UDP cmd 0x21010C0E sent");
+        } else {
+            topic_trace::LogEstopEvent(get_logger(), "[ESTOP][2/4]",
+                "ERROR: sender_ is nullptr! Cannot send firmware cmd");
+        }
+
+        // 3. 状态机层：跨进程通知 Lite3_sdk_deploy 切换至 JointDamping 状态
+        size_t sub_cnt = estop_signal_pub_->get_subscription_count();
+        {
+            char buf[128];
+            snprintf(buf, sizeof(buf),
+                "Publishing /EMERGENCY_STOP_SIGNAL (subscriber_count=%zu)", sub_cnt);
+            topic_trace::LogEstopEvent(get_logger(), "[ESTOP][3/4]", buf);
+        }
+        if (sub_cnt == 0) {
+            topic_trace::LogEstopEvent(get_logger(), "[ESTOP][3/4]",
+                "ERROR: No subscriber on /EMERGENCY_STOP_SIGNAL! "
+                "sdk_deploy not ready or InitEmergencyStopListener() not yet called");
+        }
+        drdds::msg::StdMsgInt32 sig;
+        sig.value = 1;
+        estop_signal_pub_->publish(sig);
+        topic_trace::LogEstopEvent(get_logger(), "[ESTOP][3/4]", "/EMERGENCY_STOP_SIGNAL published");
     }
 
     virtual double GetInterfaceTimeStamp(){
@@ -222,7 +284,7 @@ public:
     virtual VecXf GetContactForce() {
         return VecXf::Zero(4);
     }
-    
+
     // 定时器回调函数：以 1000Hz 频率发送 UDP 命令
     void SendCommandTimerCallback() {
         std::lock_guard<std::mutex> lock(cmd_mutex_);
@@ -232,6 +294,12 @@ public:
     }
 
     virtual void SetJointCommand(const drdds::msg::JointsDataCmd::SharedPtr msg){
+        topic_trace::LogEvent(
+            get_logger(),
+            joints_cmd_sub_trace_,
+            "SUB /JOINTS_CMD",
+            rclcpp::Time(msg->header.stamp).seconds(),
+            msg->header.frame_id);
         // 更新命令数据（加锁保护，避免与定时器回调冲突）
         std::lock_guard<std::mutex> lock(cmd_mutex_);
         for(int i=0;i<dof_num_;++i){
@@ -250,7 +318,14 @@ public:
         auto tau = GetJointTorque();
 
         drdds::msg::JointsData msg;
+        msg.header.frame_id = ++joints_data_pub_seq_;
         msg.header.stamp = this->now();
+        topic_trace::LogEvent(
+            get_logger(),
+            joints_data_pub_trace_,
+            "PUB /JOINTS_DATA",
+            rclcpp::Time(msg.header.stamp).seconds(),
+            msg.header.frame_id);
         // msg.header.frame_id = 0;
         for(int i=0;i<dof_num_;++i){
             // msg.data.joints_data[i].name = JOINT_NAMES[i];
@@ -282,5 +357,4 @@ public:
         imu_data_pub_->publish(msg);
     }
 };
-
 

@@ -5,3 +5,6 @@ log/
 *.pcd
 *.pyc
 __pycache__/
+
+tmp/
+.codex
