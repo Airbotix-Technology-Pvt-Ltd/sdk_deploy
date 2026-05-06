@@ -128,8 +128,8 @@ public:
         joint_data_id_.resize(dof_num_);
         battery_data_.resize(BATTERY_DATA_SIZE);
 
-        // Standard Best Effort QoS for high-speed simulation
-        auto qos = rclcpp::QoS(rclcpp::KeepLast(5)).best_effort();
+        // Use Reliable QoS to match the lite3_transfer node on the robot
+        auto qos = rclcpp::QoS(rclcpp::KeepLast(10));
 
         joint_cmd_pub_ = node_->create_publisher<drdds::msg::JointsDataCmd>("/JOINTS_CMD", qos);
         joint_data_sub_ = node_->create_subscription<drdds::msg::JointsData>("/JOINTS_DATA", qos,
