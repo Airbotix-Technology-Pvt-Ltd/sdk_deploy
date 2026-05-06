@@ -142,9 +142,9 @@ class MuJoCoLidarSimulationNode(Node):
         self.input_tq = np.zeros_like(self.kp_cmd)
         self.timestamp = 0.0
 
-        # High-Speed QoS
+        # Reliable QoS to match rl_deploy and hardware bridge
         qos_profile = QoSProfile(
-            reliability=ReliabilityPolicy.BEST_EFFORT,
+            reliability=ReliabilityPolicy.RELIABLE,
             history=HistoryPolicy.KEEP_LAST,
             depth=5
         )
